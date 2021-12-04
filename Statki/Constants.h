@@ -19,6 +19,7 @@
 
 #define PLAYER_1 'A'
 #define PLAYER_2 'B'
+#define PLAYERS_BOTH 'C'
 
 #define DEFAULT_NUMBER_OF_CARRIERS 1
 #define DEFAULT_NUMBER_OF_BATTLESHIPS 2

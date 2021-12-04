@@ -1,5 +1,6 @@
 #ifndef BOARD
 #define BOARD
+#define _CRT_SECURE_NO_WARNINGS
 #include "Constants.h"
 class Ship;
 class ShipCreatingCmd;
@@ -20,6 +21,7 @@ struct Point {
 	char occupyingPlayer;
 	int shipPosition;
 	void print(PrintCmd* cmd, const bool extendedLogic);
+	void setOccupyingPlayer(const char name);
 };
 
 class Board {
@@ -27,10 +29,9 @@ private:
 	Point*** points;
 	int heightDigitCount, widthDigitCount, boardHeight, boardWidth;
 	bool tooCloseToOtherShip(int x, int y, Ship* ship);
-	void setShipInPosition(int x, int y, Directions direction, Ship* ship);
+	void setShipInPosition(int x, int y, Directions direction, Ship* ship, const char playerName);
 	void setShipInPosition(MoveCmd* cmd);
 	void setShipInPosition(ShipCreatingCmd* cmd);
-	const char* isPositionValid(int x, int y, const char playerName, Directions direction, Ship* ship);
 	bool isPositionValid(MoveCmd* cmd);
 	bool isPositionValid(ShipCreatingCmd* cmd);
 	bool isOccupiedByOtherShip(int x, int y, Ship* ship);
@@ -40,11 +41,11 @@ private:
 	bool isWithinBounds(int x, int y);
 	void setMoveParameters(MoveCmd* cmd);
 	void unsetShipFromOldPosition(MoveCmd* cmd);
+	char playerOfPosition(const int x, const int y);
 public:
 	Board();
 	~Board();
 	bool placeShip(ShipCreatingCmd* cmd);
-	char playerOfPosition(const int x, const int y);
 	int getHeight();
 	int getWidth();
 	void print(PrintCmd* cmd);
@@ -57,6 +58,9 @@ public:
 	bool extendedLogic;
 	void moveShip(MoveCmd* cmd);
 	void saveReefs();
+	void saveInitPositions(const char playerName);
+	bool isOccupiedByPlayer(const int x, const int y, const char playerName);
+	const char* isPositionValid(int x, int y, const char playerName, Directions direction, Ship* ship);
 };
 
 int digitCount(int number);

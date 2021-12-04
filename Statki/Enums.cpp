@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <string.h>
 #include "Constants.h"
+#include <iostream>
 
 ShipTypes shipTypeFromAbbreviation(char input[]) {
 	if (strcmp(input, CARRIER_ABBR) == 0) return ShipTypes::CARRIER;
@@ -65,6 +66,9 @@ const char* charArrFromShipType(ShipTypes type) {
 	}
 }
 
+Directions getRandomDirection() {
+	return static_cast<Directions>(rand() % 4);
+}
 
 Directions directionFromChar(const char ch) {
 	if (ch == DIRECTION_UP) return Directions::UP;

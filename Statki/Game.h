@@ -7,38 +7,6 @@ class Player;
 class Board;
 class Command;
 
-//enum class StateActions {
-//	PRINT,
-//	SET_FLEET,
-//	NEXT_PLAYER,
-//	BOARD_SIZE,
-//	INIT_POSITION,
-//	REEF,
-//	SHIP,
-//	EXTENDED_SHIPS,
-//	SET_AI_PLAYER,
-//	SRAND,
-//	SAVE,
-//	AUTO_SHOOTING,
-//	INFORMATION,
-//	INVALID
-//};
-//
-//enum class PlayerActions {
-//	PLACE_SHIP,
-//	SHOOT,
-//	MOVE,
-//	SPY,
-//	PRINT,
-//	INVALID
-//};
-
-
-
-//StateActions stateActionFromCharArr(const char charArr[]);
-//PlayerActions playerActionFromCharArr(const char charArr[]);
-
-
 class Game {
 private:
 	char* input;
@@ -75,6 +43,7 @@ private:
 	void saveAi();
 	void saveSrand();
 	void spy();
+	bool isAutoShooting;
 public:
 	Game();
 	void play();

@@ -5,6 +5,7 @@
 enum class ShipTypes;
 enum class Directions;
 enum class MoveDir;
+class Board;
 class Player;
 
 class Ship;
@@ -36,11 +37,6 @@ public:
 	ShipTypes getShipType();
 	Directions getDirection();
 	Ship* ship;
-	//int getX();
-	//int getY();
-	//char getPlayerName();
-	//Ship* getShip();
-	//void setError(const char* msg) { setErrorMsg(msg); }
 };
 
 class PlaceShipCmd : public ShipCreatingCmd {
@@ -52,7 +48,8 @@ class ShipCmd : public ShipCreatingCmd {
 public:
 	ShipCmd(char* args);
 	~ShipCmd();
-	char* shipFields, playerName;
+	char* shipFields; 
+	//char playerName;
 };
 
 class PrintCmd : public Command {
@@ -134,7 +131,8 @@ public:
 	int roundNum, shipIndex;
 	char* shipType;
 	ShipTypes getShipType();
-	bool extendedLogic;
+	bool extendedLogic, isAuto;
+	Board* board;
 };
 
 class MoveCmd : public Command {
@@ -147,18 +145,14 @@ public:
 	Ship* ship;
 	MoveDir getMoveDir();
 	Directions newDirection;
-	//Directions getDirection();
-	//int getX();
-	//int getY();
-	//char getPlayerName();
-	//Ship* getShip();
-	//void setError(const char* msg) { setErrorMsg(msg); }
+	char playerName;
 };
 
 class SpyCmd : public Command, public XAndYCmd {
 public:
 	SpyCmd(char* args);
 	int shipIndex, roundNum;
+	bool isAuto;
 };
 
 #endif

@@ -23,7 +23,7 @@ Board::~Board() {
 }
 
 void Board::deletePoints() {
-	if (points == NULL) { 
+	if (points == NULL) {
 		return;
 	}
 	for (int i = 0; i < boardHeight; i++) {
@@ -40,18 +40,6 @@ bool Board::placeShip(ShipCreatingCmd* cmd) {
 	if (!isPositionValid(cmd)) return false;
 	int xChange, yChange;
 	getXAndYChangeFromDirection(cmd->getDirection(), &xChange, &yChange);
-	//Ship* ship = cmd->ship;
-	//int x = cmd->x;
-	//int y = cmd->y;
-	//ship->x = x;
-	//ship->y = y;
-	//for (int i = 0; i < ship->length; i++) {
-	//	points[y][x]->occupyingShip = ship;
-	//	points[y][x]->shipPosition = i;
-	//	x += xChange;
-	//	y += yChange;
-	//}
-	//ship->direction = cmd->getDirection();
 	setShipInPosition(cmd);
 	return true;
 }
@@ -62,7 +50,7 @@ const char* Board::isPositionValid(int x, int y, const char playerName, Directio
 		if (!isWithinBounds(x, y)) {
 			return (playerName != NULL ? "NOT IN STARTING POSITION" : "SHIP WENT FROM BOARD");
 		}
-		if (playerName != NULL && playerOfPosition(x, y) != playerName) {
+		if (playerName != NULL && !isOccupiedByPlayer(x, y, playerName)) {
 			return "NOT IN STARTING POSITION";
 		}
 		if (points[y][x]->isReef) {
@@ -78,27 +66,6 @@ const char* Board::isPositionValid(int x, int y, const char playerName, Directio
 }
 
 bool Board::isPositionValid(ShipCreatingCmd* cmd) {
-	//int xChange, yChange;
-	//int x = cmd->x;
-	//int y = cmd->y;
-	//getXAndYChangeFromDirection(cmd->getDirection(), &xChange, &yChange);
-	//for (int i = 0; i < cmd->ship->length; i++) {
-	//	if (!isWithinBounds(x, y) || playerOfPosition(x, y) != playerName) {
-	//		cmd->setErrorMsg("NOT IN STARTING POSITION");
-	//		return false;
-	//	}
-	//	if (points[y][x]->isReef) {
-	//		cmd->setErrorMsg("PLACING SHIP ON REEF");
-	//		return false;
-	//	}
-	//	if (tooCloseToOtherShip(x, y, cmd->ship)) {
-	//		cmd->setErrorMsg("PLACING SHIP TOO CLOSE TO OTHER SHIP");
-	//		return false;
-	//	}
-	//	x += xChange;
-	//	y += yChange;
-	//}
-	//return true;
 	const char* errorMsg = isPositionValid(cmd->x, cmd->y, cmd->playerName, cmd->getDirection(), cmd->ship);
 	if (errorMsg != NULL) {
 		cmd->setErrorMsg(errorMsg);
@@ -108,29 +75,6 @@ bool Board::isPositionValid(ShipCreatingCmd* cmd) {
 }
 
 bool Board::isPositionValid(MoveCmd* cmd) {
-	//	int xChange, yChange;
-	//	Ship* ship = cmd->ship;
-	//	int x = cmd->newX;
-	//	int y = cmd->newY;
-	//	Directions newDirection = cmd->newDirection;
-	//	getXAndYChangeFromDirection(newDirection, &xChange, &yChange);
-	//	for (int i = 0; i < ship->length; i++) {
-	//		if (!isWithinBounds(x, y)) {
-	//			cmd->setErrorMsg("SHIP WENT FROM BOARD");
-	//			return false;
-	//		}
-	//		if (points[y][x]->isReef) {
-	//			cmd->setErrorMsg("PLACING SHIP ON REEF");
-	//			return false;
-	//		}
-	//		if (tooCloseToOtherShip(x, y, ship)) {
-	//			cmd->setErrorMsg("PLACING SHIP TOO CLOSE TO OTHER SHIP");
-	//			return false;
-	//		}
-	//		x += xChange;
-	//		y += yChange;
-	//	}
-	//	return true;
 	const char* errorMsg = isPositionValid(cmd->newX, cmd->newY, NULL, cmd->newDirection, cmd->ship);
 	if (errorMsg != NULL) {
 		cmd->setErrorMsg(errorMsg);
@@ -216,10 +160,6 @@ bool Board::shotHit(ShootCmd* cmd, const char shotPlayerName) {
 		return false;
 	}
 	Point* point = points[y][x];
-	//if (point->occupyingPlayer != shotPlayerName) {
-	//	assert(!"You tried to shoot yourself");
-	//	return false;
-	//}
 	if (point->occupyingShip != NULL) {
 		return point->occupyingShip->shotHit(point->shipPosition);
 	}
@@ -293,7 +233,11 @@ void Board::initPositions(InitPositionsCmd* cmd) {
 		for (int j = 0; j < boardWidth; j++) {
 			Point* point = points[i][j];
 			if (i >= cmd->y1 && i <= cmd->y2 && j >= cmd->x1 && j <= cmd->x2) {
-				point->occupyingPlayer = cmd->playerName;
+				if (point->occupyingPlayer != NULL && point->occupyingPlayer != cmd->playerName) {
+					point->occupyingPlayer = PLAYERS_BOTH;
+				} else {
+					point->occupyingPlayer = cmd->playerName;
+				}
 			} else if (point->occupyingPlayer == cmd->playerName) {
 				point->occupyingPlayer = NULL;
 			}
@@ -307,36 +251,26 @@ void Board::moveShip(MoveCmd* cmd) {
 		assert(!"No ship found for MOVE COMMAND");
 		return;
 	}
-	if (!ship->canMove(cmd)) return;
+	if (!ship->canMove(cmd)) {
+		return;
+	}
 	setMoveParameters(cmd);
-	if (!isPositionValid(cmd)) return;
+	if (!isPositionValid(cmd)) {
+		return;
+	}
 	unsetShipFromOldPosition(cmd);
 	setShipInPosition(cmd);
-	//placeShip(cmd);
-	//int newX = cmd->newX;
-	//int newY = cmd->newY;
-	//int xChange, yChange;
-	//getXAndYChangeFromDirection(cmd->newDirection, &xChange, &yChange);
-	//for (int i = 0; i < ship->length; i++) {
-	//	points[newY][newX]->occupyingShip = ship;
-	//	points[newY][newX]->shipPosition = i;
-	//	newX += xChange;
-	//	newY += yChange;
-	//}
-	//ship->x = cmd->newX;
-	//ship->y = cmd->newY;
-	//ship->direction = cmd->newDirection;
 	ship->moved(cmd);
 }
 
 void Board::setShipInPosition(MoveCmd* cmd) {
-	setShipInPosition(cmd->newX, cmd->newY, cmd->newDirection, cmd->ship);
+	setShipInPosition(cmd->newX, cmd->newY, cmd->newDirection, cmd->ship, cmd->playerName);
 }
 void Board::setShipInPosition(ShipCreatingCmd* cmd) {
-	setShipInPosition(cmd->x, cmd->y, cmd->getDirection(), cmd->ship);
+	setShipInPosition(cmd->x, cmd->y, cmd->getDirection(), cmd->ship, cmd->playerName);
 }
 
-void Board::setShipInPosition(int x, int y, Directions direction, Ship* ship) {
+void Board::setShipInPosition(int x, int y, Directions direction, Ship* ship, const char playerName) {
 	ship->x = x;
 	ship->y = y;
 	ship->direction = direction;
@@ -345,6 +279,7 @@ void Board::setShipInPosition(int x, int y, Directions direction, Ship* ship) {
 	for (int i = 0; i < ship->length; i++) {
 		points[y][x]->occupyingShip = ship;
 		points[y][x]->shipPosition = i;
+		points[y][x]->setOccupyingPlayer(playerName);
 		x += xChange;
 		y += yChange;
 	}
@@ -382,20 +317,20 @@ void Board::setMoveParameters(MoveCmd* cmd) {
 		cmd->newDirection = (Directions)(((int)ship->direction + 1) % 4);
 		if (xChange != 0) {
 			cmd->newX = oldX - xChange;
-			cmd->newY = oldY - (xChange * length) - xChange;
+			cmd->newY = oldY - (xChange * (length - 1));
 		} else {
 			cmd->newY = oldY - yChange;
-			cmd->newX = oldX + (yChange * length) - yChange;
+			cmd->newX = oldX + (yChange * (length - 1));
 		}
 		return;
 	case MoveDir::LEFT:
 		cmd->newDirection = (Directions)(((int)ship->direction + 3) % 4);
 		if (xChange != 0) {
-			cmd->newX = oldX + xChange;
-			cmd->newY = oldY + (xChange * length) + xChange;
+			cmd->newX = oldX - xChange;
+			cmd->newY = oldY + (xChange * (length - 1));
 		} else {
 			cmd->newY = oldY - yChange;
-			cmd->newX = oldX - (yChange * length) + yChange;
+			cmd->newX = oldX - (yChange * (length - 1));
 		}
 		return;
 	}
@@ -409,4 +344,46 @@ void Board::saveReefs() {
 			}
 		}
 	}
+}
+
+void Board::saveInitPositions(const char playerName) {
+	int maxX, maxY, minX, minY;
+	maxX = maxY = -1;
+	minY = minX = INT_MAX;
+	for (int i = 0; i < boardHeight; i++) {
+		for (int j = 0; j < boardWidth; j++) {
+			if (isOccupiedByPlayer(j, i, playerName)) {
+				if (j < minX) {
+					minX = j;
+				}
+				if (j > maxX) {
+					maxX = j;
+				}
+				if (i < minY) {
+					minY = i;
+				}
+				if (i > maxY) {
+					maxY = i;
+				}
+			}
+		}
+	}
+	printf("%s %c %d %d %d %d\n", OPERATION_INIT_POSITION, playerName, minY, minX, maxY, maxX);
+}
+
+bool Board::isOccupiedByPlayer(const int x, const int y, const char playerName) {
+	char playerOfPos = playerOfPosition(x, y);
+	return playerOfPos == PLAYERS_BOTH || playerOfPos == playerName;
+}
+
+void Point::setOccupyingPlayer(const char name) {
+	if (occupyingPlayer == NULL) {
+		occupyingPlayer = name;
+		return;
+	}
+	if (occupyingPlayer != name) {
+		occupyingPlayer = PLAYERS_BOTH;
+		return;
+	}
+	occupyingPlayer = name;
 }

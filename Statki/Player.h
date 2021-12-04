@@ -15,6 +15,7 @@ class MoveCmd;
 class ShootCmd;
 class SpyCmd;
 
+
 class Player {
 private:
 	int maxCarrierNum, maxBattleshipNum, maxCruiserNum, maxDestroyerNum, piecesLeft;
@@ -26,6 +27,9 @@ private:
 	Ship* setShip(ShipCreatingCmd* cmd);
 	void saveInitialPositions(ShipPointerArrayList* list);
 	bool shipCanSee(int x, int y, ShipPointerArrayList* list);
+	bool canShoot(ShootCmd* cmd, ShipPointerArrayList* list);
+	void aiPlaceShips(ShipTypes type, Board* simulatedBoard);
+	void aiMove(ShipPointerArrayList* list);
 public:
 	Player(Board* board, char playerName);
 	~Player();
@@ -43,6 +47,9 @@ public:
 	void spy(SpyCmd* cmd);
 	bool canSee(int x, int y);
 	bool canShoot(ShootCmd* cmd);
+	void handleAi();
+	bool aiAllShipsArePlaced;
+	void aiPlaceShips();
 };
 
 #endif

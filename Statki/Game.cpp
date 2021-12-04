@@ -19,6 +19,7 @@ Game::Game() {
 	srandValue = UNINITIALIZED_INT;
 	currentCmd = NULL;
 	roundNum = 0;
+	isAutoShooting = false;
 }
 
 void Game::play() {
@@ -49,7 +50,7 @@ void Game::checkForError() {
 	if (currentCmd == NULL) {
 		return;
 	}
-	if (currentCmd->getErrorMsg() != NULL) {
+	if (currentCmd->isError()) {
 		printf(INVALID_OPEARTION_PRINTF, currentCmd->getFullOp(), currentCmd->getErrorMsg());
 		isFinished = true;
 	}
@@ -85,9 +86,9 @@ void Game::handleStateCommands() {
 		} else if (strcmp(input, OPERATION_SAVE) == 0) {
 			save();
 		} else if (strcmp(input, OPERATION_AUTO_SHOOTING) == 0) {
-		} else if (strcmp(input, OPERATION_INFORMATION) == 0) {
+			isAutoShooting = true;
 		} else {
-			assert(!"No state action selected");
+			assert(!"No such state action");
 		}
 		checkForError();
 		cin >> input;
@@ -95,6 +96,9 @@ void Game::handleStateCommands() {
 }
 
 void Game::handlePlayerCommands() {
+	if (currentPlayer->isAi) {
+		currentPlayer->handleAi();
+	}
 	cin >> input;
 	while (!(strcmp(input, TOGGLE_PLAYER_1) == 0 || strcmp(input, TOGGLE_PLAYER_2) == 0) && !isFinished && cin) {
 		if (strcmp(input, OPERATION_PLACE_SHIP) == 0) {
@@ -160,8 +164,15 @@ void Game::shoot() {
 		int argCount = sscanf(input, "%d %d", &cmd->y, &cmd->x);
 		assert(argCount == 2);
 	} else {
-		int argCount = sscanf(input, "%d %s %d %d", &cmd->shipIndex, cmd->shipType, &cmd->y, &cmd->x);
-		assert(argCount == 4);
+		if (!isAutoShooting) {
+			int argCount = sscanf(input, "%d %s %d %d", &cmd->shipIndex, cmd->shipType, &cmd->y, &cmd->x);
+			assert(argCount == 4);
+		} else {
+			int argCount = sscanf(input, "%d %d", &cmd->y, &cmd->x);
+			assert(argCount == 2);
+			cmd->isAuto = true;
+			cmd->board = board;
+		}
 		if (!currentPlayer->canShoot(cmd)) {
 			return;
 		}
@@ -204,6 +215,7 @@ void Game::move() {
 	int argCount = sscanf(input, "%d %s %c", &cmd->shipIndex, cmd->shipType, &cmd->dir);
 	assert(argCount == 3);
 	cmd->roundNum = roundNum;
+	cmd->playerName = currentPlayer->getPlayerName();
 	currentPlayer->moveShip(cmd);
 }
 
@@ -236,9 +248,16 @@ void Game::reef() {
 void Game::spy() {
 	cin.getline(input, MAX_INPUT_LENGTH);
 	SpyCmd* cmd = new SpyCmd(input);
+	cmd->roundNum = roundNum;
 	currentCmd = cmd;
-	int argCount = sscanf(input, "%d %d %d", &cmd->shipIndex, &cmd->y, &cmd->x);
-	assert(argCount == 3);
+	if (!isAutoShooting) {
+		int argCount = sscanf(input, "%d %d %d", &cmd->shipIndex, &cmd->y, &cmd->x);
+		assert(argCount == 3);
+	} else {
+		int argCount = sscanf(input, "%d %d", &cmd->y, &cmd->x);
+		assert(argCount == 2);
+		cmd->isAuto = true;
+	}
 	currentPlayer->spy(cmd);
 }
 
@@ -289,8 +308,9 @@ void Game::saveExtendedShips() {
 	}
 }
 void Game::saveAutoShooting() {
-	//TODO
-	return;
+	if (isAutoShooting) {
+		cout << OPERATION_AUTO_SHOOTING << endl;
+	}
 }
 void Game::saveAi() {
 	if (player1->isAi) {

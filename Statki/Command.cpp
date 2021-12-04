@@ -5,6 +5,7 @@
 #include "Ships.h"
 #include "Game.h"
 #include "Enums.h"
+#include "Board.h"
 
 
 Command::Command(char* args, const char* opName) {
@@ -79,7 +80,7 @@ PlaceShipCmd::PlaceShipCmd(char* args) : ShipCreatingCmd(args, OPERATION_PLACE_S
 
 ShipCmd::ShipCmd(char* args) : ShipCreatingCmd(args, OPERATION_SHIP) {
 	shipFields = new char[MAX_INPUT_SHIP_SIZE_LENGTH];
-	playerName = NULL;
+	//playerName = NULL;
 }
 
 ShipCmd::~ShipCmd() {
@@ -88,6 +89,7 @@ ShipCmd::~ShipCmd() {
 
 SpyCmd::SpyCmd(char* args) : Command(args, OPERATION_SPY) {
 	shipIndex = x = y = roundNum = UNINITIALIZED_INT;
+	isAuto = false;
 }
 
 PrintCmd::PrintCmd(char* args) : Command(args, OPERATION_PRINT) {
@@ -148,7 +150,8 @@ InformationCmd::InformationCmd(char* args) : Command(args, OPERATION_INFORMATION
 ShootCmd::ShootCmd(char* args) : Command(args, OPERATION_SHOOT) {
 	roundNum = shipIndex = UNINITIALIZED_INT;
 	shipType = new char[MAX_INPUT_LENGTH];
-	extendedLogic = false;
+	extendedLogic = isAuto = false;
+	board = NULL;
 }
 
 ShootCmd::~ShootCmd() {
@@ -165,6 +168,7 @@ MoveCmd::MoveCmd(char* args) : Command(args, OPERATION_MOVE) {
 	shipType = new char[MAX_INPUT_LENGTH];
 	ship = NULL;
 	newDirection = Directions::INVALID;
+	playerName = NULL;
 }
 
 MoveCmd::~MoveCmd() {

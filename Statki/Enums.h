@@ -19,6 +19,7 @@ enum class Directions {
 };
 void getXAndYChangeFromDirection(Directions direction, int* xChange, int* yChange);
 Directions directionFromChar(const char ch);
+Directions getRandomDirection();
 const char charFromDirection(Directions direction);
 const char* charArrFromShipType(ShipTypes type);
 

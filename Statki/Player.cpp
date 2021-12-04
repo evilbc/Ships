@@ -19,6 +19,7 @@ Player::Player(Board* board, char playerName) {
 	this->playerName = playerName;
 	isAi = false;
 	piecesLeft = 0;
+	aiAllShipsArePlaced = false;
 }
 
 Player::~Player() {
@@ -33,10 +34,6 @@ void Player::placeShip(PlaceShipCmd* cmd) {
 }
 
 Ship* Player::setShip(ShipCreatingCmd* cmd) {
-	if (board->playerOfPosition(cmd->x, cmd->y) != playerName) {
-		cmd->setErrorMsg("NOT IN STARTING POSITION");
-		return NULL;
-	}
 	ShipPointerArrayList* shipList = getListOfShipType((cmd->getShipType()));
 	if (shipList->containsIndex(cmd->shipIndex)) {
 		cmd->setErrorMsg("SHIP ALREADY PRESENT");
@@ -149,6 +146,8 @@ const char Player::getPlayerName() {
 }
 
 void Player::saveInitialPositions() {
+	board->saveInitPositions(playerName);
+	printf("%s %c %d %d %d %d\n", OPERATION_SET_FLEET, playerName, maxCarrierNum, maxBattleshipNum, maxCruiserNum, maxDestroyerNum);
 	saveInitialPositions(carriers);
 	saveInitialPositions(battleships);
 	saveInitialPositions(cruisers);
@@ -159,7 +158,7 @@ void Player::saveInitialPositions(ShipPointerArrayList* list) {
 	for (int i = 0; i < list->length(); i++) {
 		Ship* ship = list->get(i);
 		assert(ship != NULL);
-		if (ship == NULL) { 
+		if (ship == NULL) {
 			continue;
 		}
 		ship->save(playerName, i);
@@ -167,9 +166,19 @@ void Player::saveInitialPositions(ShipPointerArrayList* list) {
 }
 
 void Player::spy(SpyCmd* cmd) {
-	Carrier* carrier = (Carrier*)carriers->get(cmd->shipIndex);
-	assert(carrier != NULL);
-	carrier->spy(cmd);
+	if (!cmd->isAuto) {
+		Carrier* carrier = (Carrier*)carriers->get(cmd->shipIndex);
+		assert(carrier != NULL);
+		carrier->spy(cmd);
+		return;
+	};
+	for (int i = 0; i < carriers->length(); i++) {
+		if (((Carrier*)carriers->get(cmd->shipIndex))->canSpy(cmd)) {
+			return;
+		}
+	}
+	cmd->setErrorMsg("SPYING IS UNFEASIBLE");
+	return;
 }
 
 bool Player::canSee(int x, int y) {
@@ -197,8 +206,83 @@ bool Player::shipCanSee(int x, int y, ShipPointerArrayList* list) {
 }
 
 bool Player::canShoot(ShootCmd* cmd) {
+	if (cmd->isAuto) {
+		if (canShoot(cmd, carriers)
+			|| canShoot(cmd, battleships)
+			|| canShoot(cmd, cruisers)
+			|| canShoot(cmd, destroyers)) {
+			return true;
+		} else {
+			cmd->setErrorMsg("SHOOTS ARE UNFEASIBLE");
+			return false;
+		}
+	}
 	ShipPointerArrayList* list = getListOfShipType(cmd->getShipType());
 	Ship* ship = list->get(cmd->shipIndex);
 	assert(ship != NULL);
 	return ship->canShoot(cmd);
+
+}
+
+bool Player::canShoot(ShootCmd* cmd, ShipPointerArrayList* list) {
+	for (int i = 0; i < list->length(); i++) {
+		if (list->get(i)->canShoot(cmd)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+void Player::handleAi() {
+	cout << "START AI GENERATED COMMANDS" << endl;
+	if (!aiAllShipsArePlaced) {
+
+	}
+	aiMove(carriers);
+	aiMove(battleships);
+	aiMove(cruisers);
+	aiMove(destroyers);
+	cout << "END AI GENERATED COMMANDS, COPY AND PASTE THEM TO EXECUTE THEM" << endl;
+}
+
+void Player::aiMove(ShipPointerArrayList* list) {
+	for (int i = 0; i < list->length(); i++) {
+		//SimulationResult result;
+		//result = getBestMove(result);
+		//result.simulatedBoard->performMoves(result);
+		//cout << result.commands;
+	}
+}
+
+void Player::aiPlaceShips() {
+	Board* simulatedBoard = new Board(board);
+	aiPlaceShips(ShipTypes::CARRIER, simulatedBoard);
+	aiPlaceShips(ShipTypes::BATTLESHIP, simulatedBoard);
+	aiPlaceShips(ShipTypes::CRUISER, simulatedBoard);
+	aiPlaceShips(ShipTypes::DESTROYER, simulatedBoard);
+	delete simulatedBoard;
+	aiAllShipsArePlaced = true;
+}
+
+void Player::aiPlaceShips(ShipTypes type, Board* simulatedBoard) {
+	int max = getMaxNumberOfShipType(type);
+	ShipPointerArrayList* list = getListOfShipType(type);
+	int shipsLeftToPlace = max - list->length();
+	Directions direction;
+	bool isPlaced = false;
+	int y, x;
+
+	for (int i = 0; i < max && shipsLeftToPlace > 0; i++) {
+		if (list->containsIndex(i)) {
+			continue;
+		}
+		isPlaced = false;;
+		while (!isPlaced) {
+			y = rand() % simulatedBoard->getHeight();
+			x = rand() % simulatedBoard->getWidth();
+			direction = getRandomDirection();
+			isPlaced = simulatedBoard->aiCanPlace();
+		}
+		printf("%s %d %d %c %d %s", OPERATION_PLACE_SHIP, y, x, charFromDirection(direction), i, charArrFromShipType(type));
+	}
 }
