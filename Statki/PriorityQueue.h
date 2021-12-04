@@ -13,12 +13,13 @@ private:
 	ShootingTarget* values;
 	void moveToRight(const int index);
 public:
-	ShootingTargetPriorityQueue(int initialSize = 50);
+	ShootingTargetPriorityQueue(int initialSize = 100);
 	~ShootingTargetPriorityQueue();
 	bool isFull();
 	bool isEmpty();
 	void add(ShootingTarget value);
 	ShootingTarget remove();
+	void clear();
 };
 
 int modulo(const int num, const int mod);

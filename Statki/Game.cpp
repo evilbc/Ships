@@ -38,6 +38,7 @@ void Game::play() {
 			handlePlayerCommands();
 			roundNum++;
 		}
+		checkForError();
 	}
 
 	delete[] input;
@@ -99,12 +100,9 @@ void Game::handlePlayerCommands() {
 	if (currentPlayer->isAi) {
 		if (!currentPlayer->aiAllShipsArePlaced) {
 			currentPlayer->aiPlaceShips();
+		} else {
+			currentPlayer->handleAi(roundNum);
 		}
-		Player* otherPlayer = (currentPlayer != player1) ? player1 : player2;
-		if (otherPlayer->isAi && !otherPlayer->aiAllShipsArePlaced) {
-			otherPlayer->aiPlaceShips();
-		}
-		currentPlayer->handleAi();
 	}
 	cin >> input;
 	while (!(strcmp(input, TOGGLE_PLAYER_1) == 0 || strcmp(input, TOGGLE_PLAYER_2) == 0) && !isFinished && cin) {
@@ -281,6 +279,8 @@ void Game::setAiPlayer() {
 	char playerName;
 	cin >> playerName;
 	getPlayerFromChar(playerName)->isAi = true;
+	extendedLogic = true;
+	board->extendedLogic = true;
 }
 
 void Game::save() {

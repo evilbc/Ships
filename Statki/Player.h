@@ -14,7 +14,27 @@ class ShipCmd;
 class MoveCmd;
 class ShootCmd;
 class SpyCmd;
+class ShootingTargetPriorityQueue;
+struct ShootingTarget;
 
+struct AiMoveParams {
+	Ship* ship;
+	Board* simulatedBoard;
+	int roundNum;
+	bool madeAllMoves;
+	int shotsLeft;
+	ShootingTargetPriorityQueue* queue;
+	int shipIndex;
+};
+
+struct AiShootingRange {
+	int len;
+	int minXRange;
+	int maxXRange;
+	int minYRange;
+	int maxYRange;
+	AiShootingRange(Ship* ship, Board* board);
+};
 
 class Player {
 private:
@@ -26,11 +46,19 @@ private:
 	Ship* createShip(const ShipTypes shipType);
 	Ship* setShip(ShipCreatingCmd* cmd);
 	void saveInitialPositions(ShipPointerArrayList* list);
-	bool shipCanSee(int x, int y, ShipPointerArrayList* list);
+	bool shipCanSee(int x, int y, ShipPointerArrayList* list, bool isSimulated = false);
 	bool canShoot(ShootCmd* cmd, ShipPointerArrayList* list);
 	ShipPointerArrayList* aiPlaceShips(ShipTypes type, Board* simulatedBoard);
 	void cleanUpMockShips(ShipPointerArrayList* toDelete[NUMBER_OF_SHIP_TYPES]);
-	void aiMove(ShipPointerArrayList* list);
+	void aiMove(ShipPointerArrayList* list, AiMoveParams* params);
+	void aiMove(AiMoveParams* params);
+	void tryToShoot(AiMoveParams* params);
+	ShootingTarget getShootingTarget(const int x, const int y, Board* board, bool canSee = true);
+	double calculateValueOfShot(Ship* ship, const int position);
+	void findBestShots(AiMoveParams* params);
+	void tryToSpy(AiMoveParams* params);
+	void findRandomShots(AiMoveParams* params);
+	void clearSimulatedPlanes();
 public:
 	Player(Board* board, char playerName);
 	~Player();
@@ -46,9 +74,9 @@ public:
 	void moveShip(MoveCmd* cmd);
 	void saveInitialPositions();
 	void spy(SpyCmd* cmd);
-	bool canSee(int x, int y);
+	bool canSee(int x, int y, bool isSimulated = false);
 	bool canShoot(ShootCmd* cmd);
-	void handleAi();
+	void handleAi(const int roundNum);
 	bool aiAllShipsArePlaced;
 	void aiPlaceShips();
 };

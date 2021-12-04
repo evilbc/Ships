@@ -54,3 +54,7 @@ void ShootingTargetPriorityQueue::moveToRight(const int index) {
 int modulo(const int num, const int mod) {
 	return (mod + (num % mod)) % mod;
 }
+
+void ShootingTargetPriorityQueue::clear() {
+	size = firstIndex = 0;
+}

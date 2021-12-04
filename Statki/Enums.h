@@ -8,7 +8,12 @@ enum class ShipTypes {
 	INVALID
 };
 
-ShipTypes shipTypeFromAbbreviation(char input[]);
+enum class MoveDir {
+	FORWARD = 'F',
+	LEFT = 'L',
+	RIGHT = 'R',
+	INVALID
+};
 
 enum class Directions {
 	UP = 0,
@@ -17,17 +22,13 @@ enum class Directions {
 	LEFT = 3,
 	INVALID
 };
+ShipTypes shipTypeFromAbbreviation(char input[]);
+
 void getXAndYChangeFromDirection(Directions direction, int* xChange, int* yChange);
 Directions directionFromChar(const char ch);
 Directions getRandomDirection();
 const char charFromDirection(Directions direction);
 const char* charArrFromShipType(ShipTypes type);
-
-enum class MoveDir {
-	FORWARD = 'F',
-	LEFT = 'L',
-	RIGHT = 'R',
-	INVALID
-};
+MoveDir getRandomMoveDir();
 MoveDir moveDirFormChar(const char ch);
 #endif

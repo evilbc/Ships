@@ -11,11 +11,12 @@ PlaneLinkedList::PlaneLinkedList() {
 }
 
 PlaneLinkedList::~PlaneLinkedList() {
-	Node* current = tail;
-	while (current->previous != NULL) {
-		delete current->next;
-	}
-	delete current;
+	clear();
+	//Node* current = tail;
+	//while (current->previous != NULL) {
+	//	delete current->next;
+	//}
+	//delete current;
 }
 
 Node* PlaneLinkedList::createNode(SpyPlane* value) {
@@ -94,4 +95,19 @@ void PlaneLinkedList::removeFirst() {
 	delete newHead->previous;
 	newHead->previous = NULL;
 	size--;
+}
+
+void PlaneLinkedList::clear() {
+	Node* current = tail;
+	if (tail == NULL) {
+		return;
+	}
+	while (current->previous != NULL) {
+		current = current->previous;
+		delete current->next;
+	}
+	delete current;
+	head = NULL;
+	tail = NULL;
+	size = 0;
 }

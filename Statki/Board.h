@@ -20,8 +20,10 @@ struct Point {
 	Ship* occupyingShip;
 	char occupyingPlayer;
 	int shipPosition;
-	void print(PrintCmd* cmd, const bool extendedLogic);
+	void print(PrintCmd* cmd, const bool extendedLogic, const bool isSimulated = false);
 	void setOccupyingPlayer(const char name);
+	bool simulationAlreadyShot;
+	bool simulationDestroyed;
 };
 
 class Board {
@@ -38,14 +40,17 @@ private:
 	void printWidthIndices();
 	void printHeightIndices(int row);
 	void deletePoints();
-	bool isWithinBounds(int x, int y);
 	void setMoveParameters(MoveCmd* cmd);
 	void unsetShipFromOldPosition(MoveCmd* cmd);
 	char playerOfPosition(const int x, const int y);
+	bool wontBeAbleToMakeAnotherMove(const int x, const int y, const Directions direction);
+	bool isFacingEdge(const int x, const int y, const Directions direction);
+	bool isFacingReef(const int x, const int y, const Directions direction);
 public:
 	Board();
 	Board(const Board& obj);
 	~Board();
+	bool isWithinBounds(int x, int y);
 	bool placeShip(ShipCreatingCmd* cmd);
 	int getHeight();
 	int getWidth();
@@ -58,11 +63,16 @@ public:
 	void setReef(ReefCmd* cmd);
 	void initPositions(InitPositionsCmd* cmd);
 	bool extendedLogic;
-	void moveShip(MoveCmd* cmd);
+	bool moveShip(MoveCmd* cmd);
 	void saveReefs();
 	void saveInitPositions(const char playerName);
 	bool isOccupiedByPlayer(const int x, const int y, const char playerName);
-	const char* isPositionValid(int x, int y, const char playerName, Directions direction, Ship* ship);
+	const char* isPositionValid(int x, int y, const char playerName, Directions direction, Ship* ship, bool isSimulated = false);
+	void simulateHit(const int x, const int y);
+	bool isEnemyShip(const int x, const int y, const char playerName);
+	Ship* getShipAtPosition(const int x, const int y);
+	int getPositionOfShip(const int x, const int y);
+	bool simAlreadyShot(const int x, const int y);
 };
 
 int digitCount(int number);

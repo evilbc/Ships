@@ -7,6 +7,7 @@
 #include <assert.h>
 #include "Command.h"
 #include "Enums.h"
+#include "PriorityQueue.h"
 using namespace std;
 
 Player::Player(Board* board, char playerName) {
@@ -138,7 +139,6 @@ void Player::moveShip(MoveCmd* cmd) {
 	ShipPointerArrayList* shipList = getListOfShipType(cmd->getShipType());
 	cmd->ship = shipList->get(cmd->shipIndex);
 	board->moveShip(cmd);
-
 }
 
 const char Player::getPlayerName() {
@@ -181,24 +181,24 @@ void Player::spy(SpyCmd* cmd) {
 	return;
 }
 
-bool Player::canSee(int x, int y) {
-	if (shipCanSee(x, y, carriers)
-		|| shipCanSee(x, y, battleships)
-		|| shipCanSee(x, y, cruisers)
-		|| shipCanSee(x, y, destroyers)) {
+bool Player::canSee(int x, int y, bool isSimulated) {
+	if (shipCanSee(x, y, carriers, isSimulated)
+		|| shipCanSee(x, y, battleships, isSimulated)
+		|| shipCanSee(x, y, cruisers, isSimulated)
+		|| shipCanSee(x, y, destroyers, isSimulated)) {
 		return true;
 	}
 	for (int i = 0; i < carriers->length(); i++) {
-		if (((Carrier*)carriers->get(i))->planesCanSee(x, y)) {
+		if (((Carrier*)carriers->get(i))->planesCanSee(x, y, isSimulated)) {
 			return true;
 		}
 	}
 	return false;
 }
 
-bool Player::shipCanSee(int x, int y, ShipPointerArrayList* list) {
+bool Player::shipCanSee(int x, int y, ShipPointerArrayList* list, bool isSimulated) {
 	for (int i = 0; i < list->length(); i++) {
-		if (list->get(i)->canSee(x, y)) {
+		if (list->get(i)->canSee(x, y, isSimulated)) {
 			return true;
 		}
 	}
@@ -233,41 +233,89 @@ bool Player::canShoot(ShootCmd* cmd, ShipPointerArrayList* list) {
 	return false;
 }
 
-void Player::handleAi() {
+void Player::handleAi(const int roundNum) {
 	cout << "STARTING STATE:" << endl;
 	Board* simulatedBoard = new Board(*board);
 	PrintCmd* printCmd = new PrintCmd(EXTENDED_PRINT, this);
 	simulatedBoard->print(printCmd);
 	cout << "START AI GENERATED COMMANDS FOR PLAYER " << playerName << endl;
-	aiMove(carriers);
-	aiMove(battleships);
-	aiMove(cruisers);
-	aiMove(destroyers);
+	AiMoveParams* params = new AiMoveParams();
+	params->roundNum = roundNum;
+	params->simulatedBoard = simulatedBoard;
+	params->queue = new ShootingTargetPriorityQueue();
+	aiMove(battleships, params);
+	aiMove(cruisers, params);
+	aiMove(destroyers, params);
+	aiMove(carriers, params);
+	printf("[player%c]\n", playerName);
+	const char otherName = (playerName == PLAYER_1) ? PLAYER_2 : PLAYER_1;
+	printf("[player%c]\n", otherName);
 	cout << "END AI GENERATED COMMANDS, COPY AND PASTE THEM TO EXECUTE THEM" << endl << "SIMULATED END STATE:" << endl;
 	simulatedBoard->print(printCmd);
+	clearSimulatedPlanes();
+	delete params->queue;
+	delete params;
 	delete printCmd;
 	delete simulatedBoard;
 }
 
-void Player::aiMove(ShipPointerArrayList* list) {
-	for (int i = 0; i < list->length(); i++) {
-		//SimulationResult result;
-		//result = getBestMove(result);
-		//result.simulatedBoard->performMoves(result);
-		//cout << result.commands;
+void Player::clearSimulatedPlanes() {
+	for (int i = 0; i < carriers->length(); i++) {
+		((Carrier*)carriers->get(i))->clearSimulatedPlanes();
 	}
+}
+
+void Player::aiMove(ShipPointerArrayList* list, AiMoveParams* params) {
+	for (int i = 0; i < list->length(); i++) {
+		params->ship = list->get(i);
+		params->shipIndex = i;
+		aiMove(params);
+		params->queue->clear();
+	}
+}
+
+void Player::aiMove(AiMoveParams* params) {
+	params->madeAllMoves = false;
+	Ship* ship = params->ship;
+	params->shotsLeft = ship->maxShotsInRound;
+	int maxMovesToMake = ship->maxMovesInRound;
+	int triesLeft = AI_MAX_TRIES;
+	if (ship->isEngineDestroyed()) {
+		params->madeAllMoves = true;
+		tryToShoot(params);
+		return;
+	}
+	tryToShoot(params);
+	while (maxMovesToMake > 0 && triesLeft > 0) {
+		MoveDir dir = getRandomMoveDir();
+		MoveCmd* cmd = new MoveCmd(params->roundNum, dir, playerName, ship);
+		if (params->simulatedBoard->moveShip(cmd)) {
+			maxMovesToMake--;
+			printf("%s %d %s %c\n", OPERATION_MOVE, params->shipIndex, charArrFromShipType(ship->type), static_cast<char>(dir));
+			tryToShoot(params);
+		}
+		triesLeft--;
+		delete cmd;
+	}
+	params->madeAllMoves = true;
+	tryToShoot(params);
 }
 
 void Player::aiPlaceShips() {
 	Board* simulatedBoard = new Board(*board);
 	ShipPointerArrayList* toDelete[NUMBER_OF_SHIP_TYPES];
+	cout << "START AI GENERATED COMMANDS FOR PLAYER " << playerName << endl;
 	toDelete[0] = aiPlaceShips(ShipTypes::CARRIER, simulatedBoard);
-	toDelete[1] =  aiPlaceShips(ShipTypes::BATTLESHIP, simulatedBoard);
+	toDelete[1] = aiPlaceShips(ShipTypes::BATTLESHIP, simulatedBoard);
 	toDelete[2] = aiPlaceShips(ShipTypes::CRUISER, simulatedBoard);
 	toDelete[3] = aiPlaceShips(ShipTypes::DESTROYER, simulatedBoard);
 	cleanUpMockShips(toDelete);
 	delete simulatedBoard;
 	aiAllShipsArePlaced = true;
+	printf("[player%c]\n", playerName);
+	const char otherName = (playerName == PLAYER_1) ? PLAYER_2 : PLAYER_1;
+	printf("[player%c]\n", otherName);
+	cout << "END AI GENERATED COMMANDS, COPY AND PASTE THEM TO EXECUTE THEM" << endl;
 }
 
 ShipPointerArrayList* Player::aiPlaceShips(ShipTypes type, Board* simulatedBoard) {
@@ -293,16 +341,142 @@ ShipPointerArrayList* Player::aiPlaceShips(ShipTypes type, Board* simulatedBoard
 			delete cmd;
 		}
 		toDelete->add(ship, --shipsLeftToPlace);
-		printf("%s %d %d %c %d %s", OPERATION_PLACE_SHIP, y, x, charFromDirection(direction), i, charArrFromShipType(type));
+		printf("%s %d %d %c %d %s\n", OPERATION_PLACE_SHIP, y, x, charFromDirection(direction), i, charArrFromShipType(type));
 	}
 	return toDelete;
 }
 void Player::cleanUpMockShips(ShipPointerArrayList* toDelete[NUMBER_OF_SHIP_TYPES]) {
 	for (int k = 0; k < NUMBER_OF_SHIP_TYPES; k++) {
-		ShipPointerArrayList* list = toDelete[k];
-		for (int i = 0; i < list->length(); i++) {
-			delete list->get(i);
-		}
-		delete list;
+		delete toDelete[k];
 	}
+}
+
+void Player::tryToShoot(AiMoveParams* params) {
+	Ship* ship = params->ship;
+	if (ship->isCannonDestroyed() || params->shotsLeft <= 0) {
+		return;
+	}
+	if (ship->type == ShipTypes::CARRIER && params->madeAllMoves) {
+		tryToSpy(params);
+	}
+	findBestShots(params);
+	if (params->madeAllMoves) {
+		findRandomShots(params);
+	}
+	while (params->shotsLeft > 0 && !params->queue->isEmpty()) {
+		ShootingTarget bestTarget = params->queue->remove();
+		if (!board->isWithinBounds(bestTarget.x, bestTarget.y)) {
+			continue;
+		}
+		if (params->simulatedBoard->simAlreadyShot(bestTarget.x, bestTarget.y)) {
+			continue;
+		}
+		if (!bestTarget.isSpying) {
+			params->simulatedBoard->simulateHit(bestTarget.x, bestTarget.y);
+			printf("%s %d %s %d %d\n", OPERATION_SHOOT, params->shipIndex, charArrFromShipType(ship->type), bestTarget.y, bestTarget.x);
+		} else {
+			((Carrier*)ship)->simSpy(bestTarget.x, bestTarget.y);
+			printf("%s %d %d %d\n", OPERATION_SPY, params->shipIndex, bestTarget.y, bestTarget.x);
+		}
+		params->shotsLeft--;
+	}
+}
+
+void Player::findBestShots(AiMoveParams* params) {
+	Ship* ship = params->ship;
+	AiShootingRange* range = new AiShootingRange(ship, params->simulatedBoard);
+	for (int i = range->minXRange; i <= range->maxXRange; i++) {
+		for (int j = range->minYRange; j <= range->maxYRange; j++) {
+			if (params->simulatedBoard->isWithinBounds(i, j) && canSee(i, j, true) && params->simulatedBoard->isEnemyShip(i, j, playerName)) {
+				ShootCmd* cmd = new ShootCmd(i, j, params->roundNum, ship->type, params->shipIndex);
+				if (canShoot(cmd)) {
+					params->queue->add(getShootingTarget(i, j, params->simulatedBoard));
+				}
+				delete cmd;
+			}
+		}
+	}
+	delete range;
+}
+
+ShootingTarget Player::getShootingTarget(const int x, const int y, Board* simBoard, bool canSee) {
+	ShootingTarget target;
+	target.x = x;
+	target.y = y;
+	if (canSee) {
+		target.targetValue = calculateValueOfShot(simBoard->getShipAtPosition(x, y), simBoard->getPositionOfShip(x, y));
+	} else {
+		target.targetValue = BLIND_SHOT_VALUE;
+	}
+	target.isSpying = false;
+	return target;
+}
+
+double Player::calculateValueOfShot(Ship* ship, const int position) {
+	double shipTypeMultiplier = pow(ship->length, 2) * LENGTH_MULTIPLIER;
+	double positionMultiplier = BASE_MULTIPLIER;
+	const char sign = ship->getCharToPrint(position);
+	if (sign == SIGN_SHIP_PRESENT_CANNON) {
+		positionMultiplier = CANNON_MULTIPLIER;
+	} else if (sign == SIGN_SHIP_PRESENT_ENGINE) {
+		positionMultiplier = ENGINE_MULTIPLIER;
+	} else if (sign == SIGN_SHIP_PRESENT_RADAR) {
+		positionMultiplier = RADAR_MULTIPLIER;
+	}
+	return shipTypeMultiplier * positionMultiplier;
+}
+
+void Player::tryToSpy(AiMoveParams* params) {
+	int triesLeft = AI_MAX_TRIES;
+	int x, y;
+	int planesSent = 0;
+	while (planesSent < 5 && triesLeft > 0) {
+		x = rand() % params->simulatedBoard->getWidth();
+		y = rand() & params->simulatedBoard->getHeight();
+		if (params->simulatedBoard->isWithinBounds(x, y) && !canSee(x, y, true)) {
+			ShootingTarget target;
+			target.x = x;
+			target.y = y;
+			target.targetValue = SPYING_VALUE;
+			target.isSpying = true;
+			params->queue->add(target);
+		}
+		triesLeft--;
+	}
+}
+
+
+void Player::findRandomShots(AiMoveParams* params) {
+	Ship* ship = params->ship;
+	AiShootingRange* range = new AiShootingRange(ship, board);
+	int x, y;
+	int triesLeft = AI_MAX_TRIES;
+	while (triesLeft > 0) {
+		x = range->minXRange + (rand() % range->maxXRange - range->minXRange);
+		y = range->minYRange + (rand() % range->maxYRange - range->minYRange);
+		if (params->simulatedBoard->isWithinBounds(x, y), !canSee(x, y, true) && !params->simulatedBoard->simAlreadyShot(x, y)) {
+			ShootCmd* cmd = new ShootCmd(x, y, params->roundNum, ship->type, params->shipIndex);
+			if (canShoot(cmd)) {
+				params->queue->add(getShootingTarget(x, y, params->simulatedBoard, false));
+			}
+			delete cmd;
+		}
+		triesLeft--;
+	}
+	delete range;
+}
+
+
+AiShootingRange::AiShootingRange(Ship* ship, Board* simBoard) {
+	len = ship->length;
+	if (ship->type == ShipTypes::CARRIER) {
+		minXRange = minYRange = 0;
+		maxXRange = simBoard->getWidth();
+		maxYRange = simBoard->getHeight();
+		return;
+	}
+	minXRange = ship->simulatedX - len;
+	maxXRange = ship->simulatedX + len;
+	minYRange = ship->simulatedY - len;
+	maxYRange = ship->simulatedY + len;
 }

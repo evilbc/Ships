@@ -8,7 +8,7 @@
 #include "Board.h"
 
 
-Command::Command(char* args, const char* opName) {
+Command::Command(const char* args, const char* opName) {
 	fullOp = new char[MAX_INPUT_LENGTH];
 	strcpy(fullOp, opName);
 	strcat(fullOp, args);
@@ -55,7 +55,7 @@ ShipCreatingCmd::ShipCreatingCmd(char* args, const char* opName) : Command(args,
 	isSimulated = false;
 }
 
-ShipCreatingCmd::ShipCreatingCmd(const int x, const int y, const Directions direction, const char playerName, const ShipTypes shipType, Ship* ship) : Command(NULL, NULL) {
+ShipCreatingCmd::ShipCreatingCmd(const int x, const int y, const Directions direction, const char playerName, const ShipTypes shipType, Ship* ship) : Command() {
 	shipIndex = UNINITIALIZED_INT;
 	this->direction = charFromDirection(direction);
 	this->x = x;
@@ -101,11 +101,13 @@ SpyCmd::SpyCmd(char* args) : Command(args, OPERATION_SPY) {
 PrintCmd::PrintCmd(char* args) : Command(args, OPERATION_PRINT) {
 	type = UNINITIALIZED_INT;
 	player = NULL;
+	isSimulated = false;
 }
 
-PrintCmd::PrintCmd(int type, Player* player) : Command(NULL, OPERATION_PRINT) {
+PrintCmd::PrintCmd(int type, Player* player) : Command() {
 	this->type = type;
 	this->player = player;
+	isSimulated = true;
 }
 
 bool PrintCmd::isExtended() {
@@ -159,9 +161,21 @@ InformationCmd::InformationCmd(char* args) : Command(args, OPERATION_INFORMATION
 }
 
 ShootCmd::ShootCmd(char* args) : Command(args, OPERATION_SHOOT) {
-	roundNum = shipIndex = UNINITIALIZED_INT;
-	shipType = new char[MAX_INPUT_LENGTH];
+	roundNum = x = y = shipIndex = UNINITIALIZED_INT;
+	shipType = new char[MAX_INPUT_SHIP_TYPE_LENGTH];
+	extendedLogic = isAuto = isSimulated = false;
+	board = NULL;
+}
+
+ShootCmd::ShootCmd(const int x, const int y, const int roundNum, const ShipTypes shipType, const int index) : Command() {
+	this->x = x;
+	this->y = y;
+	this->roundNum = roundNum;
+	shipIndex = index;
+	this->shipType = new char[MAX_INPUT_SHIP_TYPE_LENGTH];
+	strcpy(this->shipType, charArrFromShipType(shipType));
 	extendedLogic = isAuto = false;
+	isSimulated = true;
 	board = NULL;
 }
 
@@ -176,10 +190,23 @@ ShipTypes ShootCmd::getShipType() {
 MoveCmd::MoveCmd(char* args) : Command(args, OPERATION_MOVE) {
 	shipIndex = roundNum = newX = newY = UNINITIALIZED_INT;
 	dir = NULL;
-	shipType = new char[MAX_INPUT_LENGTH];
+	shipType = new char[MAX_INPUT_SHIP_TYPE_LENGTH];
 	ship = NULL;
 	newDirection = Directions::INVALID;
 	playerName = NULL;
+	isSimulated = false;
+}
+
+MoveCmd::MoveCmd(const int roundNum, const MoveDir dir, const char playerName, Ship* ship) : Command() {
+	shipIndex = newX = newY = UNINITIALIZED_INT;
+	this->roundNum = roundNum;
+	this->dir = static_cast<char>(dir);
+	this->playerName = playerName;
+	this->shipType = new char[MAX_INPUT_SHIP_TYPE_LENGTH];
+	strcpy(this->shipType, charArrFromShipType(ship->type));
+	newDirection = Directions::INVALID;
+	this->ship = ship;
+	isSimulated = true;
 }
 
 MoveCmd::~MoveCmd() {

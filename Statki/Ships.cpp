@@ -11,12 +11,11 @@
 
 Ship::Ship(const int _length, const ShipTypes _type, const char _playerName, const int _maxMovesInRound)
 	: length(_length), type(_type), maxMovesInRound(_maxMovesInRound), maxShotsInRound(_length), playerName(_playerName) {
-	roundOfLastMove = lastRoundMoveCount = x = y = roundOfLastShot 
+	roundOfLastMove = lastRoundMoveCount = x = y = roundOfLastShot
 		= lastRoundShotCount = cannonX = cannonY = simulatedX = simulatedY = UNINITIALIZED_INT;
 	positions = new ShipPosition * [length];
 	initPositions();
 	direction = simulatedDirection = Directions::INVALID;
-	totalShotsMade = 0;
 }
 
 Ship::~Ship() {
@@ -65,37 +64,45 @@ char Ship::getCharToPrint(const int position) {
 	return positions[position]->sign;
 }
 
-bool Ship::canSee(int _x, int _y) {
+bool Ship::canSee(int _x, int _y, bool isSimulated) {
 	int xChange, yChange;
 	getXAndYChangeFromDirection(direction, &xChange, &yChange);
 	int newX = x;
 	int newY = y;
+	if (isSimulated) {
+		newX = simulatedX;
+		newY = simulatedY;
+	}
 	for (int i = 0; i < length; i++) {
-		if (_x == x && _y == y) {
+		if (_x == newX && _y == newY) {
 			return true;
 		}
 		newX += xChange;
 		newY += yChange;
 	}
-	return isInRadarRange(_x, _y);
+	return isInRadarRange(_x, _y, isSimulated);
 }
 
-bool Ship::isInRadarRange(int _x, int _y) {
-	if (positions[SHIP_RADAR_POSITION]->isDestroyed()) {
-		return _x >= x - 1 && _x <= x + 1 && _y >= y - 1 && _y <= y + 1;
+bool Ship::isInRadarRange(int _x, int _y, bool isSimulated) {
+	int thisX = x;
+	int thisY = y;
+	if (isSimulated) {
+		thisX = simulatedX;
+		thisY = simulatedY;
 	}
-	return distance(_x, _y, x, y) <= length;
+	if (positions[SHIP_RADAR_POSITION]->isDestroyed()) {
+		return _x >= thisX - 1 && _x <= thisX + 1 && _y >= thisY - 1 && _y <= thisY + 1;
+	}
+	return distance(_x, _y, thisX, thisY) <= length;
 }
 
 bool Ship::canShoot(ShootCmd* cmd) {
 	if (cmd->isAuto) {
-		if (positions[SHIP_CANNON_POSITION]->isDestroyed()) {
+		if (isCannonDestroyed()) {
 			return false;
 		}
 		AutoShootArgs args;
-		args.shotsLeft = (roundOfLastShot == cmd->roundNum)
-			? maxShotsInRound - lastRoundShotCount
-			: maxShotsInRound;
+		args.shotsLeft = shotsLeft(cmd->roundNum);
 		args.movesLeft = (roundOfLastMove == cmd->roundNum)
 			? maxMovesInRound - lastRoundMoveCount
 			: maxMovesInRound;
@@ -106,14 +113,16 @@ bool Ship::canShoot(ShootCmd* cmd) {
 		args.shootY = cmd->y;
 		args.len = length;
 		args.board = cmd->board;
-		bool result  = canAutoShoot(args);
+		bool result = canAutoShoot(args);
 		if (result) {
-			updateShotCount(cmd->roundNum);
-			roundOfLastShot = cmd->roundNum;
+			if (!cmd->isSimulated) {
+				updateShotCount(cmd->roundNum);
+				roundOfLastShot = cmd->roundNum;
+			}
 		}
 		return result;
 	}
-	if (positions[SHIP_CANNON_POSITION]->isDestroyed()) {
+	if (isCannonDestroyed()) {
 		cmd->setErrorMsg("SHIP CANNOT SHOOT");
 		return false;
 	}
@@ -121,9 +130,12 @@ bool Ship::canShoot(ShootCmd* cmd) {
 		cmd->setErrorMsg("TOO MANY SHOOTS");
 		return false;
 	}
-	if (!isInShootingRange(cmd->x, cmd->y)) {
+	if (!isInShootingRange(cmd->x, cmd->y, cmd->isSimulated)) {
 		cmd->setErrorMsg("SHOOTING TOO FAR");
 		return false;
+	}
+	if (cmd->isSimulated) {
+		return true;
 	}
 	updateShotCount(cmd->roundNum);
 	roundOfLastShot = cmd->roundNum;
@@ -140,7 +152,7 @@ bool Ship::canAutoShoot(AutoShootArgs args) {
 	if (shotFeasible(&args)) {
 		return true;
 	}
-	if (args.movesLeft == 0 || positions[SHIP_ENGINE_POSITION]->isDestroyed()) {
+	if (args.movesLeft == 0 || isCannonDestroyed()) {
 		return false;
 	}
 	AutoShootArgs argsF = args;
@@ -161,18 +173,18 @@ bool Ship::shotFeasible(AutoShootArgs* args) {
 	return distance(args->cannonX, args->cannonY, args->shootX, args->shootY) <= length;
 }
 
-bool Ship::isInShootingRange(int _x, int _y) {
-	getCannonXAndY();
+bool Ship::isInShootingRange(int _x, int _y, bool isSimulated) {
+	getCannonXAndY(isSimulated);
 	return distance(cannonX, cannonY, _x, _y) <= length;
 }
 
-bool Carrier::isInShootingRange(int _x, int _y) {
+bool Carrier::isInShootingRange(int _x, int _y, bool isSimulated) {
 	return true;
 }
 
 
 bool Ship::canMove(MoveCmd* cmd) {
-	if (positions[SHIP_ENGINE_POSITION]->isDestroyed()) {
+	if (isEngineDestroyed()) {
 		cmd->setErrorMsg("SHIP CANNOT MOVE");
 		return false;
 	}
@@ -184,12 +196,29 @@ bool Ship::canMove(MoveCmd* cmd) {
 }
 
 void Ship::moved(MoveCmd* cmd) {
+	if (cmd->isSimulated) {
+		return;
+	}
 	if (roundOfLastMove == cmd->roundNum) {
 		lastRoundMoveCount++;
 	} else {
 		lastRoundMoveCount = 1;
 	}
 	roundOfLastMove = cmd->roundNum;
+}
+
+bool Ship::isEngineDestroyed() {
+	return positions[SHIP_ENGINE_POSITION]->isDestroyed();
+}
+
+bool Ship::isCannonDestroyed() {
+	return positions[SHIP_CANNON_POSITION]->isDestroyed();
+}
+
+int Ship::shotsLeft(const int roundNum) {
+	return (roundOfLastShot == roundNum)
+		? maxShotsInRound - lastRoundShotCount
+		: maxShotsInRound;
 }
 
 Battleship::Battleship(const char _playerName) : Ship(LENGTH_BATTLESHIP, ShipTypes::BATTLESHIP, _playerName) {
@@ -200,13 +229,15 @@ Destroyer::Destroyer(const char _playerName) : Ship(LENGTH_DESTROYER, ShipTypes:
 }
 Carrier::Carrier(const char _playerName) : Ship(LENGTH_CARRIER, ShipTypes::CARRIER, _playerName, MAX_MOVES_CARRIER) {
 	planes = new PlaneLinkedList();
+	simulatedPlanes = new PlaneLinkedList();
 }
 Carrier::~Carrier() {
 	delete planes;
+	delete simulatedPlanes;
 }
 
 void Carrier::spy(SpyCmd* cmd) {
-	if (positions[SHIP_CANNON_POSITION]->isDestroyed()) {
+	if (isCannonDestroyed()) {
 		cmd->setErrorMsg("CANNOT SEND PLANE");
 	}
 	if (roundOfLastShot == cmd->roundNum && lastRoundShotCount >= maxShotsInRound) {
@@ -217,7 +248,7 @@ void Carrier::spy(SpyCmd* cmd) {
 }
 
 bool Carrier::canSpy(SpyCmd* cmd) {
-	if (positions[SHIP_CANNON_POSITION]->isDestroyed()) {
+	if (isCannonDestroyed()) {
 		return false;
 	}
 	if (roundOfLastShot == cmd->roundNum && lastRoundShotCount >= maxShotsInRound) {
@@ -234,6 +265,17 @@ void Carrier::sendPlane(SpyCmd* cmd) {
 	plane->x = cmd->x;
 	plane->y = cmd->y;
 	planes->push(plane);
+}
+
+void Carrier::simSpy(const int _x, const int _y) {
+	SpyPlane* plane = new SpyPlane();
+	plane->x = _x;
+	plane->y = _y;
+	simulatedPlanes->push(plane);
+}
+
+void Carrier::clearSimulatedPlanes() {
+	simulatedPlanes->clear();
 }
 
 void Ship::updateShotCount(const int cmdRoundNum) {
@@ -258,11 +300,19 @@ double Ship::distance(int x1, int y1, int x2, int y2) {
 	return sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2));
 }
 
-void Ship::getCannonXAndY() {
+void Ship::getCannonXAndY(bool isSimulated) {
 	int xChange, yChange;
-	getXAndYChangeFromDirection(direction, &xChange, &yChange);
-	cannonX = x + (xChange * SHIP_CANNON_POSITION);
-	cannonY = y + (yChange * SHIP_CANNON_POSITION);
+	Directions dir = direction;
+	int thisX = x;
+	int thisY = y;
+	if (isSimulated) {
+		thisX = simulatedX;
+		thisY = simulatedY;
+		dir = simulatedDirection;
+	}
+	getXAndYChangeFromDirection(dir, &xChange, &yChange);
+	cannonX = thisX + (xChange * SHIP_CANNON_POSITION);
+	cannonY = thisY + (yChange * SHIP_CANNON_POSITION);
 }
 
 void Ship::getCannonXAndY(AutoShootArgs* args) {
@@ -272,10 +322,17 @@ void Ship::getCannonXAndY(AutoShootArgs* args) {
 	args->cannonY = args->y + (yChange * SHIP_CANNON_POSITION);
 }
 
-bool Carrier::planesCanSee(int _x, int _y) {
+bool Carrier::planesCanSee(int _x, int _y, bool isSimulated) {
 	for (int i = 0; i < planes->length(); i++) {
 		if (planes->get(i)->canSee(_x, _y)) {
 			return true;
+		}
+	}
+	if (isSimulated) {
+		for (int i = 0; i < simulatedPlanes->length(); i++) {
+			if (simulatedPlanes->get(i)->canSee(_x, _y)) {
+				return true;
+			}
 		}
 	}
 	return false;

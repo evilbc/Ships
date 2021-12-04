@@ -28,5 +28,6 @@ public:
 	void addFirst(SpyPlane* value);
 	void removeFirst();
 	bool isEmpty();
+	void clear();
 };
 #endif

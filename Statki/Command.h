@@ -14,7 +14,7 @@ protected:
 	char* fullOp;
 	char* errorMsg;
 public:
-	Command(char* args, const char* opName);
+	Command(const char* args = "", const char* opName = "");
 	~Command();
 	char* getFullOp();
 	void setErrorMsg(const char* msg);
@@ -50,8 +50,7 @@ class ShipCmd : public ShipCreatingCmd {
 public:
 	ShipCmd(char* args);
 	~ShipCmd();
-	char* shipFields; 
-	//char playerName;
+	char* shipFields;
 };
 
 class PrintCmd : public Command {
@@ -62,6 +61,7 @@ public:
 	Player* player;
 	bool isExtended();
 	bool isPlayer();
+	bool isSimulated;
 };
 
 class SetFleetCmd : public Command {
@@ -130,17 +130,19 @@ public:
 class ShootCmd : public Command, public XAndYCmd {
 public:
 	ShootCmd(char* args);
+	ShootCmd(const int x, const int y, const int roundNum, const ShipTypes shipType, const int index);
 	~ShootCmd();
 	int roundNum, shipIndex;
 	char* shipType;
 	ShipTypes getShipType();
-	bool extendedLogic, isAuto;
+	bool extendedLogic, isAuto, isSimulated;
 	Board* board;
 };
 
 class MoveCmd : public Command {
 public:
 	MoveCmd(char* args);
+	MoveCmd(const int roundNum, const MoveDir dir, const char playerName, Ship* ship);
 	~MoveCmd();
 	int shipIndex, newX, newY, roundNum;
 	char* shipType, dir;
@@ -149,6 +151,7 @@ public:
 	MoveDir getMoveDir();
 	Directions newDirection;
 	char playerName;
+	bool isSimulated;
 };
 
 class SpyCmd : public Command, public XAndYCmd {

@@ -82,3 +82,11 @@ Directions directionFromChar(const char ch) {
 MoveDir moveDirFormChar(const char ch) {
 	return static_cast<MoveDir>(ch);
 }
+
+MoveDir getRandomMoveDir() {
+	int dir = rand() % 3;
+	if (dir == 0) {
+		return MoveDir::FORWARD;
+	}
+	return (dir == 1) ? MoveDir::LEFT : MoveDir::RIGHT;
+}

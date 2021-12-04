@@ -42,6 +42,9 @@
     <ClCompile Include="LinkedList.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="PriorityQueue.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Constants.h">
@@ -69,6 +72,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="LinkedList.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PriorityQueue.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

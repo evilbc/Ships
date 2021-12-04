@@ -147,6 +147,7 @@
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="PointerArrayList.cpp" />
+    <ClCompile Include="PriorityQueue.cpp" />
     <ClCompile Include="Ships.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -158,6 +159,7 @@
     <ClInclude Include="LinkedList.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="PointerArrayList.h" />
+    <ClInclude Include="PriorityQueue.h" />
     <ClInclude Include="Ships.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
