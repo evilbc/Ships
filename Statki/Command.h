@@ -31,9 +31,11 @@ public:
 class ShipCreatingCmd : public Command, public XAndYCmd {
 public:
 	ShipCreatingCmd(char* args, const char* opName);
+	ShipCreatingCmd(const int x, const int y, const Directions direction, const char playerName, const ShipTypes shipType, Ship* ship);
 	~ShipCreatingCmd();
 	int shipIndex;
 	char direction, playerName, * shipType;
+	bool isSimulated;
 	ShipTypes getShipType();
 	Directions getDirection();
 	Ship* ship;
@@ -55,6 +57,7 @@ public:
 class PrintCmd : public Command {
 public:
 	PrintCmd(char* args);
+	PrintCmd(int type, Player* player);
 	int type;
 	Player* player;
 	bool isExtended();

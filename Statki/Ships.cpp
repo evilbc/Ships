@@ -9,12 +9,13 @@
 #include "Board.h"
 
 
-Ship::Ship(const int _length, const ShipTypes _type, const int _maxMovesInRound)
-	: length(_length), type(_type), maxMovesInRound(_maxMovesInRound), maxShotsInRound(_length) {
-	roundOfLastMove = lastRoundMoveCount = x = y = roundOfLastShot = lastRoundShotCount = cannonX = cannonY = UNINITIALIZED_INT;
+Ship::Ship(const int _length, const ShipTypes _type, const char _playerName, const int _maxMovesInRound)
+	: length(_length), type(_type), maxMovesInRound(_maxMovesInRound), maxShotsInRound(_length), playerName(_playerName) {
+	roundOfLastMove = lastRoundMoveCount = x = y = roundOfLastShot 
+		= lastRoundShotCount = cannonX = cannonY = simulatedX = simulatedY = UNINITIALIZED_INT;
 	positions = new ShipPosition * [length];
 	initPositions();
-	direction = Directions::INVALID;
+	direction = simulatedDirection = Directions::INVALID;
 	totalShotsMade = 0;
 }
 
@@ -191,13 +192,13 @@ void Ship::moved(MoveCmd* cmd) {
 	roundOfLastMove = cmd->roundNum;
 }
 
-Battleship::Battleship() : Ship(LENGTH_BATTLESHIP, ShipTypes::BATTLESHIP) {
+Battleship::Battleship(const char _playerName) : Ship(LENGTH_BATTLESHIP, ShipTypes::BATTLESHIP, _playerName) {
 }
-Cruiser::Cruiser() : Ship(LENGTH_CRUISER, ShipTypes::CRUISER) {
+Cruiser::Cruiser(const char _playerName) : Ship(LENGTH_CRUISER, ShipTypes::CRUISER, _playerName) {
 }
-Destroyer::Destroyer() : Ship(LENGTH_DESTROYER, ShipTypes::DESTROYER) {
+Destroyer::Destroyer(const char _playerName) : Ship(LENGTH_DESTROYER, ShipTypes::DESTROYER, _playerName) {
 }
-Carrier::Carrier() : Ship(LENGTH_CARRIER, ShipTypes::CARRIER, MAX_MOVES_CARRIER) {
+Carrier::Carrier(const char _playerName) : Ship(LENGTH_CARRIER, ShipTypes::CARRIER, _playerName, MAX_MOVES_CARRIER) {
 	planes = new PlaneLinkedList();
 }
 Carrier::~Carrier() {

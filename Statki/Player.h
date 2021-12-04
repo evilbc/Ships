@@ -28,7 +28,8 @@ private:
 	void saveInitialPositions(ShipPointerArrayList* list);
 	bool shipCanSee(int x, int y, ShipPointerArrayList* list);
 	bool canShoot(ShootCmd* cmd, ShipPointerArrayList* list);
-	void aiPlaceShips(ShipTypes type, Board* simulatedBoard);
+	ShipPointerArrayList* aiPlaceShips(ShipTypes type, Board* simulatedBoard);
+	void cleanUpMockShips(ShipPointerArrayList* toDelete[NUMBER_OF_SHIP_TYPES]);
 	void aiMove(ShipPointerArrayList* list);
 public:
 	Player(Board* board, char playerName);

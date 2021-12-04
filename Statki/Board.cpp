@@ -18,6 +18,12 @@ Board::Board() {
 	extendedLogic = false;
 }
 
+Board::Board(const Board& obj) {
+	boardHeight = obj.boardHeight;
+	boardWidth = obj.boardWidth;
+	setSize(obj);
+}
+
 Board::~Board() {
 	deletePoints();
 }
@@ -37,7 +43,9 @@ void Board::deletePoints() {
 
 bool Board::placeShip(ShipCreatingCmd* cmd) {
 	assert(cmd->x < boardWidth&& cmd->y < boardHeight);
-	if (!isPositionValid(cmd)) return false;
+	if (!isPositionValid(cmd)) {
+		return false;
+	}
 	int xChange, yChange;
 	getXAndYChangeFromDirection(cmd->getDirection(), &xChange, &yChange);
 	setShipInPosition(cmd);
@@ -160,10 +168,14 @@ bool Board::shotHit(ShootCmd* cmd, const char shotPlayerName) {
 		return false;
 	}
 	Point* point = points[y][x];
-	if (point->occupyingShip != NULL) {
-		return point->occupyingShip->shotHit(point->shipPosition);
+	if (point->occupyingShip == NULL) {
+		return false;
 	}
-	return false;
+	if (point->occupyingShip->playerName != shotPlayerName) {
+		assert(!"You tried to shoot yourself");
+		return false;
+	}
+	return point->occupyingShip->shotHit(point->shipPosition);
 }
 
 void Point::print(PrintCmd* cmd, const bool extendedPrinting) {
@@ -267,13 +279,19 @@ void Board::setShipInPosition(MoveCmd* cmd) {
 	setShipInPosition(cmd->newX, cmd->newY, cmd->newDirection, cmd->ship, cmd->playerName);
 }
 void Board::setShipInPosition(ShipCreatingCmd* cmd) {
-	setShipInPosition(cmd->x, cmd->y, cmd->getDirection(), cmd->ship, cmd->playerName);
+	setShipInPosition(cmd->x, cmd->y, cmd->getDirection(), cmd->ship, cmd->playerName, cmd->isSimulated);
 }
 
-void Board::setShipInPosition(int x, int y, Directions direction, Ship* ship, const char playerName) {
-	ship->x = x;
-	ship->y = y;
-	ship->direction = direction;
+void Board::setShipInPosition(int x, int y, Directions direction, Ship* ship, const char playerName, const bool isSimulated) {
+	if (isSimulated) {
+		ship->simulatedX = x;
+		ship->simulatedY = y;
+		ship->simulatedDirection = direction;
+	} else {
+		ship->x = x;
+		ship->y = y;
+		ship->direction = direction;
+	}
 	int xChange, yChange;
 	getXAndYChangeFromDirection(direction, &xChange, &yChange);
 	for (int i = 0; i < ship->length; i++) {
@@ -386,4 +404,21 @@ void Point::setOccupyingPlayer(const char name) {
 		return;
 	}
 	occupyingPlayer = name;
+}
+
+void Board::setSize(const Board& obj) {
+	setSize(boardHeight, boardWidth);
+	for (int i = 0; i < boardHeight; i++) {
+		for (int j = 0; j < boardHeight; j++) {
+			Point* point = points[i][j];
+			Point* objPoint = obj.points[i][j];
+			point->isReef = objPoint->isReef;
+			point->occupyingPlayer = objPoint->occupyingPlayer;
+			Ship* ship = objPoint->occupyingShip;
+			ship->simulatedX = ship->x;
+			ship->simulatedY = ship->y;
+			ship->simulatedDirection = ship->direction;
+			point->occupyingShip = ship;
+		}
+	}
 }

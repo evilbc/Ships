@@ -97,6 +97,13 @@ void Game::handleStateCommands() {
 
 void Game::handlePlayerCommands() {
 	if (currentPlayer->isAi) {
+		if (!currentPlayer->aiAllShipsArePlaced) {
+			currentPlayer->aiPlaceShips();
+		}
+		Player* otherPlayer = (currentPlayer != player1) ? player1 : player2;
+		if (otherPlayer->isAi && !otherPlayer->aiAllShipsArePlaced) {
+			otherPlayer->aiPlaceShips();
+		}
 		currentPlayer->handleAi();
 	}
 	cin >> input;

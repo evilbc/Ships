@@ -47,18 +47,24 @@ XAndYCmd::XAndYCmd() {
 	x = y = UNINITIALIZED_INT;
 }
 
-//ShipPlacingCmd::ShipPlacingCmd(char* args, const char* opName) : Command(args, opName) {}
-
-//ShipPlacingCmd::ShipPlacingCmd(char* args, const char* opName) : Command(args, opName) { }
-//ShipPlacingCmd::~ShipPlacingCmd() {
-//	assert(!"TEST");
-//}
-
 ShipCreatingCmd::ShipCreatingCmd(char* args, const char* opName) : Command(args, opName) {
 	shipIndex = x = y = UNINITIALIZED_INT;
 	direction = playerName = NULL;
 	shipType = new char[MAX_INPUT_LENGTH];
 	ship = NULL;
+	isSimulated = false;
+}
+
+ShipCreatingCmd::ShipCreatingCmd(const int x, const int y, const Directions direction, const char playerName, const ShipTypes shipType, Ship* ship) : Command(NULL, NULL) {
+	shipIndex = UNINITIALIZED_INT;
+	this->direction = charFromDirection(direction);
+	this->x = x;
+	this->y = y;
+	this->shipType = new char[MAX_INPUT_SHIP_TYPE_LENGTH];
+	strcpy(this->shipType, charArrFromShipType(shipType));
+	this->playerName = playerName;
+	this->ship = ship;
+	isSimulated = true;
 }
 
 ShipTypes ShipCreatingCmd::getShipType() {
@@ -95,6 +101,11 @@ SpyCmd::SpyCmd(char* args) : Command(args, OPERATION_SPY) {
 PrintCmd::PrintCmd(char* args) : Command(args, OPERATION_PRINT) {
 	type = UNINITIALIZED_INT;
 	player = NULL;
+}
+
+PrintCmd::PrintCmd(int type, Player* player) : Command(NULL, OPERATION_PRINT) {
+	this->type = type;
+	this->player = player;
 }
 
 bool PrintCmd::isExtended() {

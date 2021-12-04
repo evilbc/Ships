@@ -57,6 +57,7 @@
 
 
 #define BASIC_PRINT 0
+#define EXTENDED_PRINT 1
 #define OP_SHIP_DESTROYED_FIELD '0'
 #define OP_SHIP_PRESENT_FIELD '1'
 
@@ -78,6 +79,8 @@
 #define DIRECTION_RIGHT 'E'
 #define DIRECTION_DOWN 'S'
 #define DIRECTION_LEFT 'W'
+
+#define NUMBER_OF_SHIP_TYPES 4
 
 //#define NDEBUG
 #endif

@@ -11,6 +11,12 @@ ShipPointerArrayList::ShipPointerArrayList(const int initialSize) {
 		values[i] = NULL;
 	}
 }
+ShipPointerArrayList::~ShipPointerArrayList() {
+	for (int i = 0; i < maxSize; i++) {
+		delete values[i];
+	}
+	delete[] values;
+}
 
 void ShipPointerArrayList::add(Ship* value, const int index) {
 	if (index > maxSize) {
@@ -47,10 +53,4 @@ bool ShipPointerArrayList::isEmpty() {
 }
 bool ShipPointerArrayList::containsIndex(const int index) {
 	return values[index] != NULL;
-}
-ShipPointerArrayList::~ShipPointerArrayList() {
-	for (int i = 0; i < maxSize; i++) {
-		delete values[i];
-	}
-	delete[] values;
 }

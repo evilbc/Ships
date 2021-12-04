@@ -45,11 +45,11 @@ protected:
 	bool shotFeasible(AutoShootArgs* args);
 	void simulateMove(AutoShootArgs* args, MoveDir dir);
 public:
-	Ship(const int _length, const ShipTypes _type, const int _maxMovesInRound = MAX_MOVES_DEFAULT);
+	Ship(const int _length, const ShipTypes _type, const char _playerName, const int _maxMovesInRound = MAX_MOVES_DEFAULT);
 	~Ship();
 	const int length;
-	Directions direction;
-	int x, y;
+	Directions direction, simulatedDirection;
+	int x, y, simulatedX, simulatedY;
 	char getCharToPrint(const int position);
 	bool shotHit(const int position);
 	bool canShoot(ShootCmd* cmd);
@@ -57,6 +57,7 @@ public:
 	void moved(MoveCmd* cmd);
 	void save(const char playerName, const int index);
 	bool canSee(int _x, int _y);
+	const char playerName;
 };
 
 class Carrier : public Ship {
@@ -66,7 +67,7 @@ private:
 	PlaneLinkedList* planes;
 	void sendPlane(SpyCmd* cmd);
 public:
-	Carrier();
+	Carrier(const char _playerName);
 	~Carrier();
 	void spy(SpyCmd* cmd);
 	bool planesCanSee(int x, int y);
@@ -75,18 +76,18 @@ public:
 
 class Battleship : public Ship {
 public:
-	Battleship();
+	Battleship(const char _playerName);
 };
 
 class Cruiser : public Ship {
 public:
-	Cruiser();
+	Cruiser(const char _playerName);
 };
 
 class Destroyer : public Ship {
 protected:
 private:
 public:
-	Destroyer();
+	Destroyer(const char _playerName);
 };
 #endif

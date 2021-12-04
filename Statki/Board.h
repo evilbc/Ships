@@ -29,7 +29,7 @@ private:
 	Point*** points;
 	int heightDigitCount, widthDigitCount, boardHeight, boardWidth;
 	bool tooCloseToOtherShip(int x, int y, Ship* ship);
-	void setShipInPosition(int x, int y, Directions direction, Ship* ship, const char playerName);
+	void setShipInPosition(int x, int y, Directions direction, Ship* ship, const char playerName, const bool isSimulated);
 	void setShipInPosition(MoveCmd* cmd);
 	void setShipInPosition(ShipCreatingCmd* cmd);
 	bool isPositionValid(MoveCmd* cmd);
@@ -44,6 +44,7 @@ private:
 	char playerOfPosition(const int x, const int y);
 public:
 	Board();
+	Board(const Board& obj);
 	~Board();
 	bool placeShip(ShipCreatingCmd* cmd);
 	int getHeight();
@@ -51,6 +52,7 @@ public:
 	void print(PrintCmd* cmd);
 	void addShip(ShipCreatingCmd* cmd);
 	bool shotHit(ShootCmd* cmd, const char shotPlayerName);
+	void setSize(const Board& obj);
 	void setSize(const int height = BOARD_HEIGHT_DEFAULT, const int width = BOARD_WIDTH_DEFAULT);
 	void setSize(BoardSizeCmd* cmd);
 	void setReef(ReefCmd* cmd);

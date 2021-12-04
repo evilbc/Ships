@@ -80,10 +80,5 @@ Directions directionFromChar(const char ch) {
 }
 
 MoveDir moveDirFormChar(const char ch) {
-	//if (ch == 'F') return MoveDir::FORWARD;
-	//if (ch == 'L') return MoveDir::LEFT;
-	//if (ch == 'R') return MoveDir::RIGHT;
-	//assert(!"No such move dir");
-	//return MoveDir::INVALID;
 	return static_cast<MoveDir>(ch);
 }

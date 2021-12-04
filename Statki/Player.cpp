@@ -57,13 +57,13 @@ Ship* Player::setShip(ShipCreatingCmd* cmd) {
 Ship* Player::createShip(const ShipTypes shipType) {
 	switch (shipType) {
 	case ShipTypes::CARRIER:
-		return new Carrier();
+		return new Carrier(playerName);
 	case ShipTypes::BATTLESHIP:
-		return new Battleship();
+		return new Battleship(playerName);
 	case ShipTypes::CRUISER:
-		return new Cruiser();
+		return new Cruiser(playerName);
 	case ShipTypes::DESTROYER:
-		return new Destroyer();
+		return new Destroyer(playerName);
 	}
 	assert(!"Incorrect ship type");
 	return NULL;
@@ -234,15 +234,19 @@ bool Player::canShoot(ShootCmd* cmd, ShipPointerArrayList* list) {
 }
 
 void Player::handleAi() {
-	cout << "START AI GENERATED COMMANDS" << endl;
-	if (!aiAllShipsArePlaced) {
-
-	}
+	cout << "STARTING STATE:" << endl;
+	Board* simulatedBoard = new Board(*board);
+	PrintCmd* printCmd = new PrintCmd(EXTENDED_PRINT, this);
+	simulatedBoard->print(printCmd);
+	cout << "START AI GENERATED COMMANDS FOR PLAYER " << playerName << endl;
 	aiMove(carriers);
 	aiMove(battleships);
 	aiMove(cruisers);
 	aiMove(destroyers);
-	cout << "END AI GENERATED COMMANDS, COPY AND PASTE THEM TO EXECUTE THEM" << endl;
+	cout << "END AI GENERATED COMMANDS, COPY AND PASTE THEM TO EXECUTE THEM" << endl << "SIMULATED END STATE:" << endl;
+	simulatedBoard->print(printCmd);
+	delete printCmd;
+	delete simulatedBoard;
 }
 
 void Player::aiMove(ShipPointerArrayList* list) {
@@ -255,34 +259,50 @@ void Player::aiMove(ShipPointerArrayList* list) {
 }
 
 void Player::aiPlaceShips() {
-	Board* simulatedBoard = new Board(board);
-	aiPlaceShips(ShipTypes::CARRIER, simulatedBoard);
-	aiPlaceShips(ShipTypes::BATTLESHIP, simulatedBoard);
-	aiPlaceShips(ShipTypes::CRUISER, simulatedBoard);
-	aiPlaceShips(ShipTypes::DESTROYER, simulatedBoard);
+	Board* simulatedBoard = new Board(*board);
+	ShipPointerArrayList* toDelete[NUMBER_OF_SHIP_TYPES];
+	toDelete[0] = aiPlaceShips(ShipTypes::CARRIER, simulatedBoard);
+	toDelete[1] =  aiPlaceShips(ShipTypes::BATTLESHIP, simulatedBoard);
+	toDelete[2] = aiPlaceShips(ShipTypes::CRUISER, simulatedBoard);
+	toDelete[3] = aiPlaceShips(ShipTypes::DESTROYER, simulatedBoard);
+	cleanUpMockShips(toDelete);
 	delete simulatedBoard;
 	aiAllShipsArePlaced = true;
 }
 
-void Player::aiPlaceShips(ShipTypes type, Board* simulatedBoard) {
+ShipPointerArrayList* Player::aiPlaceShips(ShipTypes type, Board* simulatedBoard) {
 	int max = getMaxNumberOfShipType(type);
 	ShipPointerArrayList* list = getListOfShipType(type);
 	int shipsLeftToPlace = max - list->length();
 	Directions direction;
 	bool isPlaced = false;
 	int y, x;
-
+	ShipPointerArrayList* toDelete = new ShipPointerArrayList();
 	for (int i = 0; i < max && shipsLeftToPlace > 0; i++) {
 		if (list->containsIndex(i)) {
 			continue;
 		}
-		isPlaced = false;;
+		Ship* ship = createShip(type);
+		isPlaced = false;
 		while (!isPlaced) {
 			y = rand() % simulatedBoard->getHeight();
 			x = rand() % simulatedBoard->getWidth();
 			direction = getRandomDirection();
-			isPlaced = simulatedBoard->aiCanPlace();
+			ShipCreatingCmd* cmd = new ShipCreatingCmd(x, y, direction, playerName, type, ship);
+			isPlaced = simulatedBoard->placeShip(cmd);
+			delete cmd;
 		}
+		toDelete->add(ship, --shipsLeftToPlace);
 		printf("%s %d %d %c %d %s", OPERATION_PLACE_SHIP, y, x, charFromDirection(direction), i, charArrFromShipType(type));
+	}
+	return toDelete;
+}
+void Player::cleanUpMockShips(ShipPointerArrayList* toDelete[NUMBER_OF_SHIP_TYPES]) {
+	for (int k = 0; k < NUMBER_OF_SHIP_TYPES; k++) {
+		ShipPointerArrayList* list = toDelete[k];
+		for (int i = 0; i < list->length(); i++) {
+			delete list->get(i);
+		}
+		delete list;
 	}
 }
