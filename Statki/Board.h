@@ -13,6 +13,7 @@ class PlaceShipCmd;
 class MoveCmd;
 class Command;
 enum class Directions;
+enum class MoveDir;
 
 struct Point {
 	int x, y;
@@ -20,10 +21,16 @@ struct Point {
 	Ship* occupyingShip;
 	char occupyingPlayer;
 	int shipPosition;
-	void print(PrintCmd* cmd, const bool extendedLogic, const bool isSimulated = false);
+	void print(PrintCmd* cmd, const bool extendedPrinting, const bool isSimulated = false);
 	void setOccupyingPlayer(const char name);
 	bool simulationAlreadyShot;
 	bool simulationDestroyed;
+};
+
+struct MoveParams {
+	int x, y;
+	Directions direction;
+	MoveParams(const int x, const int y, const int length, const Directions dir, const MoveDir moveDir);
 };
 
 class Board {
@@ -61,7 +68,7 @@ public:
 	void setSize(const int height = BOARD_HEIGHT_DEFAULT, const int width = BOARD_WIDTH_DEFAULT);
 	void setSize(BoardSizeCmd* cmd);
 	void setReef(ReefCmd* cmd);
-	void initPositions(InitPositionsCmd* cmd);
+	void initPositions(const InitPositionsCmd* cmd);
 	bool extendedLogic;
 	bool moveShip(MoveCmd* cmd);
 	void saveReefs();

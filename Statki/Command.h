@@ -68,6 +68,7 @@ class SetFleetCmd : public Command {
 public:
 	SetFleetCmd(char* args);
 	int numOfCarriers, numOfBattleships, numOfCruisers, numOfDestroyers;
+	char playerName;
 };
 
 class NextPlayerCmd : public Command {
@@ -142,7 +143,7 @@ public:
 class MoveCmd : public Command {
 public:
 	MoveCmd(char* args);
-	MoveCmd(const int roundNum, const MoveDir dir, const char playerName, Ship* ship);
+	MoveCmd(const int roundNum, const MoveDir dir, const char playerName, Ship* ship, const bool isSimulated = true);
 	~MoveCmd();
 	int shipIndex, newX, newY, roundNum;
 	char* shipType, dir;

@@ -13,13 +13,20 @@ Game::Game() {
 	player1 = new Player(board, PLAYER_1);
 	player2 = new Player(board, PLAYER_2);
 	isFinished = false;
-	currentPlayer = NULL;
+	currentPlayer = getPlayerFromChar(PLAYER_2);
 	input = new char[MAX_INPUT_LENGTH];
 	extendedLogic = false;
 	srandValue = UNINITIALIZED_INT;
 	currentCmd = NULL;
 	roundNum = 0;
 	isAutoShooting = false;
+}
+
+Game::~Game() {
+	delete[] input;
+	delete player1;
+	delete player2;
+	delete board;
 }
 
 void Game::play() {
@@ -34,17 +41,24 @@ void Game::play() {
 				printf(INVALID_OPEARTION_PRINTF, strcat(input, " "), "THE OTHER PLAYER EXPECTED");
 				break;
 			}
+			Player* previousPlayer = currentPlayer;
 			currentPlayer = (isPlayer1) ? player1 : player2;
 			handlePlayerCommands();
 			roundNum++;
+			if (previousPlayer->isAi) {
+				continue;
+			}
 		}
 		checkForError();
+		Player* nextPlayer = (currentPlayer == player1) ? player2 : player1;
+		if (nextPlayer->isAi) {
+			if (!nextPlayer->aiAllShipsArePlaced) {
+				nextPlayer->aiPlaceShips(roundNum);
+			} else {
+				nextPlayer->handleAi(roundNum);
+			}
+		}
 	}
-
-	delete[] input;
-	delete player1;
-	delete player2;
-	delete board;
 }
 
 void Game::checkForError() {
@@ -97,13 +111,6 @@ void Game::handleStateCommands() {
 }
 
 void Game::handlePlayerCommands() {
-	if (currentPlayer->isAi) {
-		if (!currentPlayer->aiAllShipsArePlaced) {
-			currentPlayer->aiPlaceShips();
-		} else {
-			currentPlayer->handleAi(roundNum);
-		}
-	}
 	cin >> input;
 	while (!(strcmp(input, TOGGLE_PLAYER_1) == 0 || strcmp(input, TOGGLE_PLAYER_2) == 0) && !isFinished && cin) {
 		if (strcmp(input, OPERATION_PLACE_SHIP) == 0) {
@@ -125,13 +132,14 @@ void Game::handlePlayerCommands() {
 }
 
 void Game::setFleet() {
-	char playerChar;
-	int carrierNum, battleshipNum, cruiserNum, destroyerNum;
-	int argCount = scanf(" %c %d %d %d %d", &playerChar, &carrierNum, &battleshipNum, &cruiserNum, &destroyerNum);
+	cin.getline(input, MAX_INPUT_LENGTH);
+	SetFleetCmd* cmd = new SetFleetCmd(input);
+	currentCmd = cmd;
+	int argCount = sscanf(input, " %c %d %d %d %d", &cmd->playerName, &cmd->numOfCarriers, &cmd->numOfBattleships, &cmd->numOfCruisers, &cmd->numOfDestroyers);
 	assert(argCount == 1 || argCount == 5);
-	Player* player = getPlayerFromChar(playerChar);
+	Player* player = getPlayerFromChar(cmd->playerName);
 	if (argCount == 5) {
-		player->setFleet(carrierNum, battleshipNum, cruiserNum, destroyerNum);
+		player->setFleet(cmd->numOfCarriers, cmd->numOfBattleships, cmd->numOfCruisers, cmd->numOfDestroyers);
 	} else if (argCount == 1) {
 		player->setFleet();
 	} else {
@@ -190,7 +198,7 @@ void Game::shoot() {
 	playerShot->beShot(cmd);
 	if (playerShot->getPiecesLeft() == 0) {
 		isFinished = true;
-		cout << currentPlayer->getPlayerName() << " won";
+		printf("%c won", currentPlayer->getPlayerName());
 	}
 }
 
@@ -235,8 +243,7 @@ void Game::print(const bool isPlayerPrint) {
 	}
 	board->print(cmd);
 	if (!isPlayerPrint) {
-		cout << "PARTS REMAINING:: " << PLAYER_1 << " : " << player1->getPiecesLeft()
-			<< " " << PLAYER_2 << " : " << player2->getPiecesLeft() << endl;
+		printf("PARTS REMAINING:: %c : %d %c : %d\n", PLAYER_1, player1->getPiecesLeft(), PLAYER_2, player2->getPiecesLeft());
 	}
 
 }
@@ -284,7 +291,7 @@ void Game::setAiPlayer() {
 }
 
 void Game::save() {
-	cout << TOGGLE_STATE_COMMANDS << endl;
+	printf("%s\n", TOGGLE_STATE_COMMANDS);
 	saveBoardSize();
 	saveNextPlayer();
 	saveInitialPositions();
@@ -293,7 +300,7 @@ void Game::save() {
 	saveAutoShooting();
 	saveAi();
 	saveSrand();
-	cout << TOGGLE_STATE_COMMANDS << endl;
+	printf("%s\n", TOGGLE_STATE_COMMANDS);
 }
 
 void Game::saveBoardSize() {
@@ -311,12 +318,12 @@ void Game::saveInitialPositions() {
 }
 void Game::saveExtendedShips() {
 	if (extendedLogic) {
-		cout << OPERATION_EXTENDED_SHIPS << endl;
+		printf("%s\n", OPERATION_EXTENDED_SHIPS);
 	}
 }
 void Game::saveAutoShooting() {
 	if (isAutoShooting) {
-		cout << OPERATION_AUTO_SHOOTING << endl;
+		printf("%s\n", OPERATION_AUTO_SHOOTING);
 	}
 }
 void Game::saveAi() {

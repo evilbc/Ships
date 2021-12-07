@@ -46,6 +46,7 @@ private:
 	bool isAutoShooting;
 public:
 	Game();
+	~Game();
 	void play();
 };
 #endif

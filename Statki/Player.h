@@ -59,6 +59,9 @@ private:
 	void tryToSpy(AiMoveParams* params);
 	void findRandomShots(AiMoveParams* params);
 	void clearSimulatedPlanes();
+	int lastRoundOfAi;
+	void aiPrintState();
+	bool aiShouldExit(const int roundNum);
 public:
 	Player(Board* board, char playerName);
 	~Player();
@@ -78,7 +81,7 @@ public:
 	bool canShoot(ShootCmd* cmd);
 	void handleAi(const int roundNum);
 	bool aiAllShipsArePlaced;
-	void aiPlaceShips();
+	void aiPlaceShips(const int roundNum);
 };
 
 #endif

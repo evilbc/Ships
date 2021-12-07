@@ -10,6 +10,7 @@
 #define SIGN_SHIP_PRESENT_RADAR '@'
 #define SIGN_SHIP_DESTROYED 'x'
 #define SIGN_UNKNOWN '?'
+#define SIGN_NOTHING ' '
 
 #define SIGN_REEF '#'
 
@@ -89,6 +90,10 @@
 #define BASE_MULTIPLIER 0.2
 #define SPYING_VALUE 1
 #define BLIND_SHOT_VALUE 0
+
+#define LEFT_MOVE_DIRECTION_CHANGE 3
+#define RIGHT_MOVE_DIRECTION_CHANGE 1
+#define NUMBER_OF_DIRECTIONS 4
 
 //#define NDEBUG
 #endif

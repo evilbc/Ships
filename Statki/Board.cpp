@@ -131,19 +131,19 @@ void Board::print(PrintCmd* cmd) {
 		for (int j = 0; j < boardWidth; j++) {
 			points[i][j]->print(cmd, isExtended, cmd->isSimulated);
 		}
-		cout << endl;
+		printf("\n");
 	}
 }
 
 void Board::printWidthIndices() {
 	for (int i = 0; i < widthDigitCount; i++) {
 		for (int j = 0; j < heightDigitCount; j++) {
-			cout << ' ';
+			printf(" ");
 		}
 		for (int j = 0; j < boardWidth; j++) {
-			cout << (int)(j / pow(10, (widthDigitCount - i - 1))) % 10;
+			printf("%d", (int)(j / pow(10, (widthDigitCount - i - 1))) % 10);
 		}
-		cout << endl;
+		printf("\n");
 	}
 }
 
@@ -184,25 +184,25 @@ bool Board::shotHit(ShootCmd* cmd, const char shotPlayerName) {
 
 void Point::print(PrintCmd* cmd, const bool extendedPrinting, const bool isSimulated) {
 	if (cmd->isPlayer() && !cmd->player->canSee(x, y, isSimulated)) {
-		cout << SIGN_UNKNOWN;
+		printf("%c", SIGN_UNKNOWN);
 		return;
 	}
 	if (isReef) {
-		cout << SIGN_REEF;
+		printf("%c", SIGN_REEF);
 		return;
 	}
 	if (occupyingShip == NULL) {
-		cout << ' ';
+		printf("%c", SIGN_NOTHING);
 		return;
 	}
 	if (isSimulated && simulationDestroyed) {
-		cout << SIGN_SHIP_DESTROYED;
+		printf("%c", SIGN_SHIP_DESTROYED);
 	}
 	if (!extendedPrinting) {
-		cout << ((occupyingShip->getCharToPrint(shipPosition) == SIGN_SHIP_DESTROYED) ? SIGN_SHIP_DESTROYED : SIGN_SHIP_PRESENT_DEFAULT);
+		printf("%c", ((occupyingShip->getCharToPrint(shipPosition) == SIGN_SHIP_DESTROYED) ? SIGN_SHIP_DESTROYED : SIGN_SHIP_PRESENT_DEFAULT));
 		return;
 	}
-	cout << occupyingShip->getCharToPrint(shipPosition);
+	printf("%c", occupyingShip->getCharToPrint(shipPosition));
 }
 
 void Board::setSize(const int height, const int width) {
@@ -248,16 +248,12 @@ void Board::setReef(ReefCmd* cmd) {
 	points[y][x]->isReef = true;
 }
 
-void Board::initPositions(InitPositionsCmd* cmd) {
+void Board::initPositions(const InitPositionsCmd* cmd) {
 	for (int i = 0; i < boardHeight; i++) {
 		for (int j = 0; j < boardWidth; j++) {
 			Point* point = points[i][j];
 			if (i >= cmd->y1 && i <= cmd->y2 && j >= cmd->x1 && j <= cmd->x2) {
-				if (point->occupyingPlayer != NULL && point->occupyingPlayer != cmd->playerName) {
-					point->occupyingPlayer = PLAYERS_BOTH;
-				} else {
-					point->occupyingPlayer = cmd->playerName;
-				}
+				point->setOccupyingPlayer(cmd->playerName);
 			} else if (point->occupyingPlayer == cmd->playerName) {
 				point->occupyingPlayer = NULL;
 			}
@@ -333,8 +329,6 @@ void Board::unsetShipFromOldPosition(MoveCmd* cmd) {
 }
 
 void Board::setMoveParameters(MoveCmd* cmd) {
-	int xChange = 0;
-	int yChange = 0;
 	Ship* ship = cmd->ship;
 	int length = ship->length;
 	int oldX = ship->x;
@@ -345,33 +339,45 @@ void Board::setMoveParameters(MoveCmd* cmd) {
 		oldY = ship->simulatedY;
 		dir = ship->simulatedDirection;
 	}
+	MoveParams* params = new MoveParams(oldX, oldY, length, dir, cmd->getMoveDir());
+	cmd->newDirection = params->direction;
+	cmd->newX = params->x;
+	cmd->newY = params->y;
+	delete params;
+}
+
+MoveParams::MoveParams(const int x, const int y, const int length, const Directions dir, const MoveDir moveDir) {
+	this->x = this->y = UNINITIALIZED_INT;
+	this->direction = Directions::INVALID;
+	int xChange = 0;
+	int yChange = 0;
 	getXAndYChangeFromDirection(dir, &xChange, &yChange);
-	switch (cmd->getMoveDir()) {
+	switch (moveDir) {
 	case MoveDir::FORWARD:
-		cmd->newDirection = dir;
-		cmd->newX = oldX - xChange;
-		cmd->newY = oldY - yChange;
-		return;
+		this->direction = dir;
+		this->x = x - xChange;
+		this->y = y - yChange;
+		break;
 	case MoveDir::RIGHT:
-		cmd->newDirection = (Directions)(((int)dir + 1) % 4);
+		this->direction = (Directions)(((int)dir + RIGHT_MOVE_DIRECTION_CHANGE) % NUMBER_OF_DIRECTIONS);
 		if (xChange != 0) {
-			cmd->newX = oldX - xChange;
-			cmd->newY = oldY - (xChange * (length - 1));
+			this->x = x - xChange;
+			this->y = y - (xChange * (length - 1));
 		} else {
-			cmd->newY = oldY - yChange;
-			cmd->newX = oldX + (yChange * (length - 1));
+			this->y = y - yChange;
+			this->x = x + (yChange * (length - 1));
 		}
-		return;
+		break;
 	case MoveDir::LEFT:
-		cmd->newDirection = (Directions)(((int)dir + 3) % 4);
+		this->direction = (Directions)(((int)dir + LEFT_MOVE_DIRECTION_CHANGE) % NUMBER_OF_DIRECTIONS);
 		if (xChange != 0) {
-			cmd->newX = oldX - xChange;
-			cmd->newY = oldY + (xChange * (length - 1));
+			this->x = x - xChange;
+			this->y = y + (xChange * (length - 1));
 		} else {
-			cmd->newY = oldY - yChange;
-			cmd->newX = oldX - (yChange * (length - 1));
+			this->y = y - yChange;
+			this->x = x - (yChange * (length - 1));
 		}
-		return;
+		break;
 	}
 }
 

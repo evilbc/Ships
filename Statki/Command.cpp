@@ -86,7 +86,6 @@ PlaceShipCmd::PlaceShipCmd(char* args) : ShipCreatingCmd(args, OPERATION_PLACE_S
 
 ShipCmd::ShipCmd(char* args) : ShipCreatingCmd(args, OPERATION_SHIP) {
 	shipFields = new char[MAX_INPUT_SHIP_SIZE_LENGTH];
-	//playerName = NULL;
 }
 
 ShipCmd::~ShipCmd() {
@@ -121,6 +120,7 @@ bool PrintCmd::isPlayer() {
 
 SetFleetCmd::SetFleetCmd(char* args) : Command(args, OPERATION_SET_FLEET) {
 	numOfCarriers = numOfBattleships = numOfCruisers = numOfDestroyers = UNINITIALIZED_INT;
+	playerName = NULL;
 }
 
 NextPlayerCmd::NextPlayerCmd(char* args) : Command(args, OPERATION_NEXT_PLAYER) {
@@ -197,7 +197,7 @@ MoveCmd::MoveCmd(char* args) : Command(args, OPERATION_MOVE) {
 	isSimulated = false;
 }
 
-MoveCmd::MoveCmd(const int roundNum, const MoveDir dir, const char playerName, Ship* ship) : Command() {
+MoveCmd::MoveCmd(const int roundNum, const MoveDir dir, const char playerName, Ship* ship, const bool isSimulated) : Command() {
 	shipIndex = newX = newY = UNINITIALIZED_INT;
 	this->roundNum = roundNum;
 	this->dir = static_cast<char>(dir);
@@ -206,7 +206,7 @@ MoveCmd::MoveCmd(const int roundNum, const MoveDir dir, const char playerName, S
 	strcpy(this->shipType, charArrFromShipType(ship->type));
 	newDirection = Directions::INVALID;
 	this->ship = ship;
-	isSimulated = true;
+	this->isSimulated = isSimulated;
 }
 
 MoveCmd::~MoveCmd() {

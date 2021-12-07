@@ -5,10 +5,18 @@
 #include <iostream>
 
 ShipTypes shipTypeFromAbbreviation(char input[]) {
-	if (strcmp(input, CARRIER_ABBR) == 0) return ShipTypes::CARRIER;
-	if (strcmp(input, BATTLESHIP_ABBR) == 0) return ShipTypes::BATTLESHIP;
-	if (strcmp(input, CRUISER_ABBR) == 0) return ShipTypes::CRUISER;
-	if (strcmp(input, DESTROYER_ABBR) == 0) return ShipTypes::DESTROYER;
+	if (strcmp(input, CARRIER_ABBR) == 0) {
+		return ShipTypes::CARRIER;
+	}
+	if (strcmp(input, BATTLESHIP_ABBR) == 0) {
+		return ShipTypes::BATTLESHIP;
+	}
+	if (strcmp(input, CRUISER_ABBR) == 0) {
+		return ShipTypes::CRUISER;
+	}
+	if (strcmp(input, DESTROYER_ABBR) == 0) {
+		return ShipTypes::DESTROYER;
+	}
 	assert(!"No such ship type");
 	return ShipTypes::INVALID;
 }
@@ -62,7 +70,7 @@ const char* charArrFromShipType(ShipTypes type) {
 		return DESTROYER_ABBR;
 	default:
 		assert(!"Invalid type");
-		return "INVALID";
+		return "INV";
 	}
 }
 
@@ -71,10 +79,18 @@ Directions getRandomDirection() {
 }
 
 Directions directionFromChar(const char ch) {
-	if (ch == DIRECTION_UP) return Directions::UP;
-	if (ch == DIRECTION_DOWN) return Directions::DOWN;
-	if (ch == DIRECTION_RIGHT) return Directions::RIGHT;
-	if (ch == DIRECTION_LEFT) return Directions::LEFT;
+	if (ch == DIRECTION_UP) {
+		return Directions::UP;
+	}
+	if (ch == DIRECTION_DOWN) {
+		return Directions::DOWN;
+	}
+	if (ch == DIRECTION_RIGHT) {
+		return Directions::RIGHT;
+	}
+	if (ch == DIRECTION_LEFT) {
+		return Directions::LEFT;
+	}
 	assert(!"No such direction");
 	return Directions::INVALID;
 }

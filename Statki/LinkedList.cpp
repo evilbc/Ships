@@ -12,11 +12,6 @@ PlaneLinkedList::PlaneLinkedList() {
 
 PlaneLinkedList::~PlaneLinkedList() {
 	clear();
-	//Node* current = tail;
-	//while (current->previous != NULL) {
-	//	delete current->next;
-	//}
-	//delete current;
 }
 
 Node* PlaneLinkedList::createNode(SpyPlane* value) {

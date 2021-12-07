@@ -18,7 +18,7 @@ struct ShipPosition {
 
 struct SpyPlane {
 	int x, y;
-	bool canSee(int _x, int _y);
+	bool canSee(int x, int y);
 };
 
 struct AutoShootArgs {
@@ -35,14 +35,15 @@ protected:
 	ShipPosition** positions;
 	void initPositions();
 	int roundOfLastMove, lastRoundMoveCount, roundOfLastShot, lastRoundShotCount, cannonX, cannonY;
-	virtual bool isInShootingRange(int _x, int _y, bool isSimulated = false);
-	bool isInRadarRange(int _x, int _y, bool isSimulated = false);
+	virtual bool isInShootingRange(int x, int y, bool isSimulated = false);
+	bool isInRadarRange(int x, int y, bool isSimulated = false);
 	void updateShotCount(const int cmdRoundNum);
+	bool canAutoShoot(ShootCmd* cmd);
 	bool canAutoShoot(AutoShootArgs args);
 	bool shotFeasible(AutoShootArgs* args);
 	void simulateMove(AutoShootArgs* args, MoveDir dir);
 public:
-	Ship(const int _length, const ShipTypes _type, const char _playerName, const int _maxMovesInRound = MAX_MOVES_DEFAULT);
+	Ship(const int length, const ShipTypes type, const char playerName, const int maxMovesInRound = MAX_MOVES_DEFAULT);
 	~Ship();
 	const int maxMovesInRound;
 	const int maxShotsInRound;
@@ -55,12 +56,13 @@ public:
 	bool canShoot(ShootCmd* cmd);
 	bool canMove(MoveCmd* cmd);
 	void moved(MoveCmd* cmd);
-	void save(const char playerName, const int index);
-	bool canSee(int _x, int _y, bool isSimulated = false);
+	void save(const int index);
+	bool canSee(int x, int y, bool isSimulated = false);
 	const char playerName;
 	bool isEngineDestroyed();
 	bool isCannonDestroyed();
 	int shotsLeft(const int roundNum);
+	int movesLeft(const int roundNum);
 };
 
 class Carrier : public Ship {
@@ -70,29 +72,29 @@ private:
 	PlaneLinkedList* planes, * simulatedPlanes;
 	void sendPlane(SpyCmd* cmd);
 public:
-	Carrier(const char _playerName);
+	Carrier(const char playerName);
 	~Carrier();
 	void spy(SpyCmd* cmd);
-	bool planesCanSee(int _x, int _y, bool isSimulated = false);
+	bool planesCanSee(int x, int y, bool isSimulated = false);
 	bool canSpy(SpyCmd* cmd);
-	void simSpy(const int _x, const int _y);
+	void simSpy(const int x, const int y);
 	void clearSimulatedPlanes();
 };
 
 class Battleship : public Ship {
 public:
-	Battleship(const char _playerName);
+	Battleship(const char playerName);
 };
 
 class Cruiser : public Ship {
 public:
-	Cruiser(const char _playerName);
+	Cruiser(const char playerName);
 };
 
 class Destroyer : public Ship {
 protected:
 private:
 public:
-	Destroyer(const char _playerName);
+	Destroyer(const char playerName);
 };
 #endif

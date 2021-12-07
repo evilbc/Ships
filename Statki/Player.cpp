@@ -21,6 +21,7 @@ Player::Player(Board* board, char playerName) {
 	isAi = false;
 	piecesLeft = 0;
 	aiAllShipsArePlaced = false;
+	lastRoundOfAi = UNINITIALIZED_INT;
 }
 
 Player::~Player() {
@@ -161,7 +162,7 @@ void Player::saveInitialPositions(ShipPointerArrayList* list) {
 		if (ship == NULL) {
 			continue;
 		}
-		ship->save(playerName, i);
+		ship->save(i);
 	}
 }
 
@@ -233,12 +234,40 @@ bool Player::canShoot(ShootCmd* cmd, ShipPointerArrayList* list) {
 	return false;
 }
 
-void Player::handleAi(const int roundNum) {
-	cout << "STARTING STATE:" << endl;
+bool Player::aiShouldExit(const int roundNum) {
+	if (lastRoundOfAi == roundNum) {
+		return true;
+	}
+	lastRoundOfAi = roundNum;
+	return false;
+}
+
+void Player::aiPlaceShips(const int roundNum) {
+	if (aiShouldExit(roundNum)) {
+		return;
+	}
+	aiPrintState();
+	printf("[player%c]\n", playerName);
 	Board* simulatedBoard = new Board(*board);
-	PrintCmd* printCmd = new PrintCmd(EXTENDED_PRINT, this);
-	simulatedBoard->print(printCmd);
-	cout << "START AI GENERATED COMMANDS FOR PLAYER " << playerName << endl;
+	ShipPointerArrayList* toDelete[NUMBER_OF_SHIP_TYPES];
+	toDelete[0] = aiPlaceShips(ShipTypes::CARRIER, simulatedBoard);
+	toDelete[1] = aiPlaceShips(ShipTypes::BATTLESHIP, simulatedBoard);
+	toDelete[2] = aiPlaceShips(ShipTypes::CRUISER, simulatedBoard);
+	toDelete[3] = aiPlaceShips(ShipTypes::DESTROYER, simulatedBoard);
+	cleanUpMockShips(toDelete);
+	delete simulatedBoard;
+	aiAllShipsArePlaced = true;
+	printf("[player%c]\n", playerName);
+	aiPrintState();
+}
+
+void Player::handleAi(const int roundNum) {
+	if (aiShouldExit(roundNum)) {
+		return;
+	}
+	aiPrintState();
+	printf("[player%c]\n", playerName);
+	Board* simulatedBoard = new Board(*board);
 	AiMoveParams* params = new AiMoveParams();
 	params->roundNum = roundNum;
 	params->simulatedBoard = simulatedBoard;
@@ -248,15 +277,15 @@ void Player::handleAi(const int roundNum) {
 	aiMove(destroyers, params);
 	aiMove(carriers, params);
 	printf("[player%c]\n", playerName);
-	const char otherName = (playerName == PLAYER_1) ? PLAYER_2 : PLAYER_1;
-	printf("[player%c]\n", otherName);
-	cout << "END AI GENERATED COMMANDS, COPY AND PASTE THEM TO EXECUTE THEM" << endl << "SIMULATED END STATE:" << endl;
-	simulatedBoard->print(printCmd);
+	aiPrintState();
 	clearSimulatedPlanes();
 	delete params->queue;
 	delete params;
-	delete printCmd;
 	delete simulatedBoard;
+}
+
+void Player::aiPrintState() {
+	printf("\n%s\n%s %d\n%s\n", TOGGLE_STATE_COMMANDS, OPERATION_PRINT, BASIC_PRINT, TOGGLE_STATE_COMMANDS);
 }
 
 void Player::clearSimulatedPlanes() {
@@ -273,6 +302,7 @@ void Player::aiMove(ShipPointerArrayList* list, AiMoveParams* params) {
 		params->queue->clear();
 	}
 }
+
 
 void Player::aiMove(AiMoveParams* params) {
 	params->madeAllMoves = false;
@@ -301,22 +331,6 @@ void Player::aiMove(AiMoveParams* params) {
 	tryToShoot(params);
 }
 
-void Player::aiPlaceShips() {
-	Board* simulatedBoard = new Board(*board);
-	ShipPointerArrayList* toDelete[NUMBER_OF_SHIP_TYPES];
-	cout << "START AI GENERATED COMMANDS FOR PLAYER " << playerName << endl;
-	toDelete[0] = aiPlaceShips(ShipTypes::CARRIER, simulatedBoard);
-	toDelete[1] = aiPlaceShips(ShipTypes::BATTLESHIP, simulatedBoard);
-	toDelete[2] = aiPlaceShips(ShipTypes::CRUISER, simulatedBoard);
-	toDelete[3] = aiPlaceShips(ShipTypes::DESTROYER, simulatedBoard);
-	cleanUpMockShips(toDelete);
-	delete simulatedBoard;
-	aiAllShipsArePlaced = true;
-	printf("[player%c]\n", playerName);
-	const char otherName = (playerName == PLAYER_1) ? PLAYER_2 : PLAYER_1;
-	printf("[player%c]\n", otherName);
-	cout << "END AI GENERATED COMMANDS, COPY AND PASTE THEM TO EXECUTE THEM" << endl;
-}
 
 ShipPointerArrayList* Player::aiPlaceShips(ShipTypes type, Board* simulatedBoard) {
 	int max = getMaxNumberOfShipType(type);
@@ -428,11 +442,10 @@ double Player::calculateValueOfShot(Ship* ship, const int position) {
 
 void Player::tryToSpy(AiMoveParams* params) {
 	int triesLeft = AI_MAX_TRIES;
-	int x, y;
 	int planesSent = 0;
 	while (planesSent < 5 && triesLeft > 0) {
-		x = rand() % params->simulatedBoard->getWidth();
-		y = rand() & params->simulatedBoard->getHeight();
+		int x = rand() % params->simulatedBoard->getWidth();
+		int y = rand() & params->simulatedBoard->getHeight();
 		if (params->simulatedBoard->isWithinBounds(x, y) && !canSee(x, y, true)) {
 			ShootingTarget target;
 			target.x = x;
